@@ -457,8 +457,11 @@ async function extractSmartUrl() {
 
     const filledCount = applyExtractedJob(payload.job || {});
     const methodLabel = payload.method === "ai" ? "AI extracted" : "Parsed";
+    const adapterLabel = payload.adapter && payload.adapter !== "generic"
+      ? ` via ${capitalize(payload.adapter)}`
+      : "";
     elements.smartResult.textContent = filledCount
-      ? `${methodLabel} ${filledCount} fields. Review before saving.`
+      ? `${methodLabel}${adapterLabel} ${filledCount} fields. Review before saving.`
       : "No clear fields found from this link.";
   } catch (error) {
     const fallbackText = elements.smartTextInput.value.trim();
@@ -720,6 +723,10 @@ function cleanExtractedValue(value) {
     .replace(/^[\-\u2013\u2014|]+/, "")
     .replace(/[\-\u2013\u2014|]+$/, "")
     .trim();
+}
+
+function capitalize(value) {
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
 function deleteCurrentJob() {

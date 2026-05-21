@@ -59,6 +59,7 @@ The app also includes dashboard metrics, search, filtering, sorting, follow-up t
 
 - **Application tracking:** Store each job as its own entity with the details that matter.
 - **Smart Add:** Paste a job link or job post and let Antri prefill fields like role, company, location, compensation, source, URL, and notes.
+- **ATS adapters:** Smart Add uses public Greenhouse and Lever posting APIs before trying generic page fetching.
 - **Pipeline visibility:** See total applications, active opportunities, responses, and due follow-ups.
 - **Search and filters:** Quickly find roles by company, location, status, source, notes, or contact.
 - **Follow-up view:** Keep upcoming and overdue next actions visible.
@@ -81,6 +82,15 @@ This version is a dependency-free static web app built with:
 - Local heuristic parsing as a fallback
 
 The tracker itself is lightweight and can run without a database, login system, or build step. The Phase 2 link extraction experiment requires the local Python backend because browsers cannot reliably fetch job pages directly and API keys should not be stored in frontend code.
+
+Smart Add link extraction is currently most reliable for canonical Greenhouse and Lever posting URLs, for example:
+
+```text
+https://boards.greenhouse.io/company/jobs/1234567
+https://jobs.lever.co/company/posting-id
+```
+
+Other job sites still use the generic page fetch path and may block Antri with HTTP errors such as `403` or `429`.
 
 ## Run Locally
 
@@ -106,6 +116,7 @@ The long-term vision is for Antri to reduce manual tracking as much as possible.
 Possible future improvements:
 
 - Move Smart Add link extraction to a hosted backend or serverless function.
+- Add more ATS adapters for platforms that expose usable public job data.
 - Connect Gmail or Outlook to detect application confirmations, recruiter replies, rejections, and interview invites.
 - Automatically update application status from email activity.
 - Add reminders for follow-ups.

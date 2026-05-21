@@ -1,8 +1,9 @@
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from html.parser import HTMLParser
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, quote, urlparse
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+import html as html_lib
 import json
 import os
 import re
@@ -100,8 +101,13 @@ class Handler(SimpleHTTPRequestHandler):
                 return
 
             fetch_error = ""
+            adapter = "generic"
             try:
-                page_text = fetch_page_text(url)
+                adapter_result = fetch_ats_page_text(url)
+                if adapter_result:
+                    page_text, adapter = adapter_result
+                else:
+                    page_text = fetch_page_text(url)
             except (HTTPError, URLError) as error:
                 if not fallback_text:
                     raise
@@ -119,7 +125,7 @@ class Handler(SimpleHTTPRequestHandler):
 
             job["url"] = job.get("url") or url
             job["source"] = job.get("source") or infer_source(url)
-            self.send_json({"job": job, "method": method, "note": fetch_error.strip()})
+            self.send_json({"job": job, "method": method, "adapter": adapter, "note": fetch_error.strip()})
         except HTTPError as error:
             self.send_json({"error": f"The job page returned HTTP {error.code}."}, 502)
         except URLError:
@@ -163,6 +169,146 @@ def fetch_page_text(url):
     json_ld = "\n".join(extract_json_ld_text(html))
     combined = f"{json_ld}\n\n{text}".strip()
     return combined[:30000]
+
+
+def fetch_ats_page_text(url):
+    greenhouse = parse_greenhouse_url(url)
+    if greenhouse:
+        return fetch_greenhouse_text(*greenhouse), "greenhouse"
+
+    lever = parse_lever_url(url)
+    if lever:
+        return fetch_lever_text(*lever), "lever"
+
+    return None
+
+
+def parse_greenhouse_url(url):
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    path = [part for part in parsed.path.split("/") if part]
+    if "greenhouse.io" not in host:
+        return None
+
+    if host.startswith("boards.greenhouse.io") and len(path) >= 3 and path[1] == "jobs":
+        return path[0], only_digits(path[2])
+
+    query = parse_qs(parsed.query)
+    if host.startswith("job-boards.greenhouse.io") and len(path) >= 2:
+        job_id = path[-1]
+        board = query.get("for", [""])[0] or path[0]
+        return board, only_digits(job_id)
+
+    if host.startswith("boards.greenhouse.io") and len(path) >= 2 and path[-2] == "jobs":
+        return path[0], only_digits(path[-1])
+
+    return None
+
+
+def fetch_greenhouse_text(board_token, job_id):
+    if not board_token or not job_id:
+        raise ValueError("Could not read the Greenhouse board or job ID from this link.")
+
+    api_url = (
+        "https://boards-api.greenhouse.io/v1/boards/"
+        f"{quote(board_token)}/jobs/{quote(job_id)}?pay_transparency=true"
+    )
+    data = fetch_json(api_url)
+    board = fetch_json(f"https://boards-api.greenhouse.io/v1/boards/{quote(board_token)}")
+    location = (data.get("location") or {}).get("name", "")
+    content = html_to_text(data.get("content", ""))
+    pay = greenhouse_pay_text(data)
+    parts = [
+        f"Job title: {data.get('title', '')}",
+        f"Company: {board.get('name', '') or humanize_site(board_token)}",
+        f"Location: {location}",
+        f"Source: Greenhouse",
+        f"Compensation: {pay}" if pay else "",
+        content,
+    ]
+    return "\n".join(part for part in parts if part).strip()
+
+
+def greenhouse_pay_text(data):
+    pay_ranges = data.get("pay_input_ranges") or []
+    labels = []
+    for pay_range in pay_ranges:
+        min_value = pay_range.get("min_cents")
+        max_value = pay_range.get("max_cents")
+        currency = pay_range.get("currency_type") or ""
+        interval = pay_range.get("pay_period") or ""
+        if min_value is None or max_value is None:
+            continue
+        labels.append(f"{currency} {min_value / 100:,.0f} - {max_value / 100:,.0f} {interval}".strip())
+    return "; ".join(labels)
+
+
+def parse_lever_url(url):
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    path = [part for part in parsed.path.split("/") if part]
+    if host not in {"jobs.lever.co", "jobs.eu.lever.co"} or len(path) < 2:
+        return None
+    return path[0], path[1], "eu" if host.startswith("jobs.eu.") else "global"
+
+
+def fetch_lever_text(site, posting_id, region):
+    api_host = "api.eu.lever.co" if region == "eu" else "api.lever.co"
+    api_url = f"https://{api_host}/v0/postings/{quote(site)}/{quote(posting_id)}"
+    data = fetch_json(api_url)
+    categories = data.get("categories") or {}
+    location = categories.get("location") or ""
+    workplace_type = data.get("workplaceType") or ""
+    content = "\n".join(
+        value for value in [
+            data.get("descriptionPlain", ""),
+            text_from_lever_lists(data.get("lists") or []),
+            data.get("additionalPlain", ""),
+        ] if value
+    )
+    parts = [
+        f"Job title: {data.get('text', '')}",
+        f"Company: {humanize_site(site)}",
+        f"Location: {' - '.join(value for value in [location, workplace_type] if value)}",
+        "Source: Lever",
+        content,
+    ]
+    return "\n".join(part for part in parts if part).strip()
+
+
+def text_from_lever_lists(items):
+    return "\n".join(
+        "\n".join(
+            value for value in [
+                item.get("text", ""),
+                html_to_text(item.get("content", "")),
+            ] if value
+        )
+        for item in items
+    )
+
+
+def fetch_json(url):
+    request = Request(
+        url,
+        headers={
+            "User-Agent": "Mozilla/5.0 AntriJobExtractor/0.1",
+            "Accept": "application/json",
+        },
+    )
+    with urlopen(request, timeout=15) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def html_to_text(html):
+    parser = VisibleTextParser()
+    parser.feed(html_lib.unescape(html or ""))
+    return parser.text()
+
+
+def only_digits(value):
+    match = re.search(r"\d+", value or "")
+    return match.group(0) if match else ""
 
 
 def extract_json_ld_text(html):
@@ -241,7 +387,7 @@ def find_response_text(data):
 def extract_with_heuristics(url, text):
     lines = [normalize_line(line) for line in text.splitlines()]
     lines = [line for line in lines if line]
-    role = next((line for line in lines[:12] if looks_like_role(line)), "")
+    role = find_labeled(lines, ["job title", "title", "role", "position"]) or next((line for line in lines[:12] if looks_like_role(line)), "")
     company = find_labeled(lines, ["company", "employer", "organization"]) or infer_company(lines, url)
     location = find_labeled(lines, ["location", "job location", "work location"]) or infer_location(text)
     compensation = infer_compensation(text)
@@ -323,6 +469,10 @@ def infer_source(url):
     return host.replace("www.", "")
 
 
+def humanize_site(value):
+    return re.sub(r"[-_]+", " ", value or "").title()
+
+
 def looks_like_role(line):
     words = (
         "engineer developer designer manager analyst associate specialist coordinator director "
@@ -336,7 +486,10 @@ def looks_like_role(line):
 if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
     print(f"Serving Antri at http://{HOST}:{PORT}/index.html")
-    print("Set OPENAI_API_KEY before starting this server to enable AI extraction.")
+    if os.environ.get("OPENAI_API_KEY"):
+        print("OPENAI_API_KEY detected. AI extraction is enabled.")
+    else:
+        print("Set OPENAI_API_KEY before starting this server to enable AI extraction.")
     try:
         ThreadingHTTPServer((HOST, PORT), Handler).serve_forever()
     except KeyboardInterrupt:
