@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" role="img" aria-labelledby="title desc">
+  <title id="title">Antri logo</title>
+  <desc id="desc">The Antri logo with a geometric mark and wordmark.</desc>
+  <rect width="96" height="96" rx="22" fill="#111111"/>
+  <path d="M24 72L45.4 24h5.2L72 72h-12.6l-4.1-10H40.5l-4.1 10H24Z" fill="#ffffff"/>
+  <path d="M44.1 52h7.8L48 42.4 44.1 52Z" fill="#111111"/>
+  <path d="M30 68c13.7-2.5 25.2-10.9 34-25" fill="none" stroke="#60a5fa" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="66" cy="38" r="5.5" fill="#60a5fa"/>
+  <path d="M134.7 68h-13.2l22-48h5.5l22.1 48h-13.5l-3.6-8.4h-15.8l-3.5 8.4Zm7.1-18.1h8.5L146 39.5l-4.2 10.4Z" fill="#111111"/>
+  <path d="M180.4 32.8h11.3v4.7c2.3-3.5 5.9-5.4 10.5-5.4 8.1 0 13 5.3 13 14.2V68h-11.6V48.5c0-4.1-2.1-6.5-5.8-6.5-3.5 0-5.8 2.5-5.8 6.5V68h-11.6V32.8Z" fill="#111111"/>
+  <path d="M230.6 42.4h-5.5v-9.6h5.5V23h11.6v9.8h8.5v9.6h-8.5v12.8c0 2.6 1.3 3.8 4 3.8 1.5 0 2.9-.2 4.1-.7v9.2c-2 .8-4.4 1.2-7.2 1.2-8.2 0-12.5-4.1-12.5-12.2V42.4Z" fill="#111111"/>
+  <path d="M262.5 32.8h11.3v6.1c1.8-4.1 5.2-6.5 10.3-6.5h1.8v11.2h-2.7c-5.8 0-9.1 3.1-9.1 8.9V68h-11.6V32.8Z" fill="#111111"/>
+  <path d="M295.6 22.9c0-3.6 2.8-6.3 6.7-6.3s6.7 2.7 6.7 6.3-2.8 6.3-6.7 6.3-6.7-2.7-6.7-6.3Zm.9 9.9h11.6V68h-11.6V32.8Z" fill="#111111"/>
+</svg>
