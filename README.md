@@ -60,6 +60,7 @@ The app also includes dashboard metrics, search, filtering, sorting, follow-up t
 - **Application tracking:** Store each job as its own entity with the details that matter.
 - **Smart Add:** Paste a job link or job post and let Antri prefill fields like role, company, location, compensation, source, URL, and notes.
 - **ATS adapters:** Smart Add uses public Greenhouse and Lever posting APIs before trying generic page fetching.
+- **Browser saver:** A local Chrome extension captures rendered job pages that block backend URL fetching.
 - **Pipeline visibility:** See total applications, active opportunities, responses, and due follow-ups.
 - **Search and filters:** Quickly find roles by company, location, status, source, notes, or contact.
 - **Follow-up view:** Keep upcoming and overdue next actions visible.
@@ -80,6 +81,7 @@ This version is a dependency-free static web app built with:
 - Python local backend for experimental link extraction
 - OpenAI API structured extraction when `OPENAI_API_KEY` is configured
 - Local heuristic parsing as a fallback
+- Chrome extension prototype in `extension/`
 
 The tracker itself is lightweight and can run without a database, login system, or build step. The Phase 2 link extraction experiment requires the local Python backend because browsers cannot reliably fetch job pages directly and API keys should not be stored in frontend code.
 
@@ -91,6 +93,8 @@ https://jobs.lever.co/company/posting-id
 ```
 
 Other job sites still use the generic page fetch path and may block Antri with HTTP errors such as `403` or `429`.
+
+For LinkedIn, Indeed, Workday, and other pages that block backend URL fetching, use the browser saver extension. It captures the rendered page after you click the extension and opens Antri with a draft record.
 
 ## Run Locally
 
@@ -109,6 +113,20 @@ Then visit:
 http://127.0.0.1:4173/index.html
 ```
 
+## Load The Chrome Extension
+
+1. Start the Antri backend with `python server.py`.
+2. Keep `http://127.0.0.1:4173/index.html` available locally.
+3. Open `chrome://extensions` in Chrome.
+4. Turn on **Developer mode**.
+5. Click **Load unpacked**.
+6. Select the `extension` folder inside this project.
+7. Open a job posting in Chrome, click the Antri extension, and choose **Save current job**.
+
+For the best extraction quality, set `OPENAI_API_KEY` before starting the backend. Without it, the extension still opens a draft from Antri's local fallback parser, but the draft will usually need more cleanup.
+
+The browser saver works differently from Smart Add links: it reads the job page after Chrome has rendered it, sends the visible page text to the local Antri backend, then opens a new Antri tab with a draft application ready to review and save.
+
 ## Future Direction
 
 The long-term vision is for Antri to reduce manual tracking as much as possible.
@@ -117,6 +135,7 @@ Possible future improvements:
 
 - Move Smart Add link extraction to a hosted backend or serverless function.
 - Add more ATS adapters for platforms that expose usable public job data.
+- Improve browser saver extraction with page-specific helpers for LinkedIn, Indeed, and Workday.
 - Connect Gmail or Outlook to detect application confirmations, recruiter replies, rejections, and interview invites.
 - Automatically update application status from email activity.
 - Add reminders for follow-ups.

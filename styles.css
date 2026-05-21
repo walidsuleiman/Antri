@@ -339,9 +339,14 @@ h3 {
 
 .controls {
   display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.filter-topline {
+  display: grid;
   grid-template-columns: minmax(240px, 1fr) auto;
   gap: 12px;
-  margin-bottom: 18px;
 }
 
 .search-field {
@@ -395,6 +400,121 @@ a:focus-visible {
   min-height: 48px;
   min-width: 170px;
   padding: 0 12px;
+}
+
+.source-filter {
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.filter-label {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.source-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.source-chip {
+  --chip-neon: #38bdf8;
+  --chip-neon-soft: rgba(56, 189, 248, 0.12);
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--chip-neon) 58%, var(--line));
+  border-radius: 999px;
+  background: var(--chip-neon-soft);
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 800;
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--chip-neon) 12%, transparent);
+}
+
+.source-chip strong {
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  min-height: 20px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--chip-neon) 18%, var(--panel));
+  color: var(--chip-neon);
+  font-size: 0.74rem;
+}
+
+.source-chip:hover,
+.source-chip[aria-pressed="true"] {
+  border-color: var(--chip-neon);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--chip-neon) 48%, transparent),
+    0 0 18px color-mix(in srgb, var(--chip-neon) 34%, transparent);
+}
+
+.source-chip[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--chip-neon) 22%, var(--panel));
+}
+
+.source-chip.all,
+.source-chip.silver {
+  --chip-neon: #d4d4d8;
+  --chip-neon-soft: rgba(161, 161, 170, 0.12);
+}
+
+.source-chip.cyan {
+  --chip-neon: #22d3ee;
+  --chip-neon-soft: rgba(34, 211, 238, 0.12);
+}
+
+.source-chip.lime {
+  --chip-neon: #a3e635;
+  --chip-neon-soft: rgba(163, 230, 53, 0.12);
+}
+
+.source-chip.amber {
+  --chip-neon: #facc15;
+  --chip-neon-soft: rgba(250, 204, 21, 0.12);
+}
+
+.source-chip.green,
+.source-chip.emerald {
+  --chip-neon: #34d399;
+  --chip-neon-soft: rgba(52, 211, 153, 0.12);
+}
+
+.source-chip.pink,
+.source-chip.magenta {
+  --chip-neon: #f472b6;
+  --chip-neon-soft: rgba(244, 114, 182, 0.12);
+}
+
+.source-chip.violet {
+  --chip-neon: #c084fc;
+  --chip-neon-soft: rgba(192, 132, 252, 0.12);
+}
+
+.source-chip.orange {
+  --chip-neon: #fb923c;
+  --chip-neon-soft: rgba(251, 146, 60, 0.12);
+}
+
+.source-chip.red {
+  --chip-neon: #fb7185;
+  --chip-neon-soft: rgba(251, 113, 133, 0.12);
+}
+
+.source-chip.blue {
+  --chip-neon: #60a5fa;
+  --chip-neon-soft: rgba(96, 165, 250, 0.12);
 }
 
 .view {
@@ -834,7 +954,8 @@ label textarea {
 
   .topbar,
   .section-head,
-  .controls {
+  .controls,
+  .filter-topline {
     align-items: stretch;
     grid-template-columns: 1fr;
     flex-direction: column;

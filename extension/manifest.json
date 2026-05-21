@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Antri Job Saver",
+  "version": "0.1.0",
+  "description": "Capture the current job page and open an Antri application draft.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "tabs"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:4173/*",
+    "http://localhost:4173/*"
+  ],
+  "action": {
+    "default_title": "Save job to Antri",
+    "default_popup": "popup.html"
+  }
+}

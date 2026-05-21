@@ -64,6 +64,7 @@ const sampleJobs = [
 
 let jobs = loadJobs();
 let currentView = "pipeline";
+let activeSourceFilter = "all";
 
 const elements = {
   views: {
@@ -80,6 +81,7 @@ const elements = {
   searchInput: document.getElementById("searchInput"),
   statusFilter: document.getElementById("statusFilter"),
   sortSelect: document.getElementById("sortSelect"),
+  sourceFilters: document.getElementById("sourceFilters"),
   resultCount: document.getElementById("resultCount"),
   jobList: document.getElementById("jobList"),
   emptyState: document.getElementById("emptyState"),
@@ -148,6 +150,7 @@ function init() {
   populateStatusOptions();
   bindEvents();
   render();
+  openDraftFromUrl();
 }
 
 function populateStatusOptions() {
@@ -197,6 +200,7 @@ function switchView(viewName) {
 
 function render() {
   renderMetrics();
+  renderSourceFilters();
   renderJobs();
   renderFollowups();
   renderInsights();
@@ -271,17 +275,56 @@ function getFilteredJobs() {
         job.compensation
       ].join(" ").toLowerCase();
 
-      return (!query || haystack.includes(query)) && (status === "all" || job.status === status);
+      const matchesSource = activeSourceFilter === "all" || sourceFilterKey(job.source) === activeSourceFilter;
+      return (!query || haystack.includes(query))
+        && (status === "all" || job.status === status)
+        && matchesSource;
     })
     .sort((a, b) => sortJobs(a, b, sort));
 }
 
 function sortJobs(a, b, sort) {
   if (sort === "date-asc") return safeDate(a.dateApplied) - safeDate(b.dateApplied);
-  if (sort === "company") return a.company.localeCompare(b.company);
+  if (sort === "role-asc") return sortText(a.role, b.role);
+  if (sort === "role-desc") return sortText(b.role, a.role);
+  if (sort === "company-asc") return sortText(a.company, b.company);
+  if (sort === "company-desc") return sortText(b.company, a.company);
   if (sort === "followup") return safeDate(a.followUp, true) - safeDate(b.followUp, true);
   if (sort === "priority") return priorityRank(a.priority) - priorityRank(b.priority);
   return safeDate(b.dateApplied) - safeDate(a.dateApplied);
+}
+
+function renderSourceFilters() {
+  const sourceCounts = jobs.reduce((counts, job) => {
+    const key = sourceFilterKey(job.source);
+    counts[key] = (counts[key] || 0) + 1;
+    return counts;
+  }, {});
+  const sourceKeys = Object.keys(sourceCounts).sort((a, b) => sourceFilterLabel(a).localeCompare(sourceFilterLabel(b)));
+
+  if (activeSourceFilter !== "all" && !sourceCounts[activeSourceFilter]) {
+    activeSourceFilter = "all";
+  }
+
+  elements.sourceFilters.replaceChildren(
+    sourceFilterButton("all", "All", jobs.length),
+    ...sourceKeys.map((key) => sourceFilterButton(key, sourceFilterLabel(key), sourceCounts[key]))
+  );
+}
+
+function sourceFilterButton(key, label, count) {
+  const button = document.createElement("button");
+  button.className = `source-chip ${sourceFilterTone(key)}`;
+  button.type = "button";
+  button.dataset.source = key;
+  button.setAttribute("aria-pressed", String(activeSourceFilter === key));
+  button.innerHTML = `<span>${escapeHtml(label)}</span><strong>${count}</strong>`;
+  button.addEventListener("click", () => {
+    activeSourceFilter = key;
+    renderSourceFilters();
+    renderJobs();
+  });
+  return button;
 }
 
 function renderFollowups() {
@@ -520,6 +563,34 @@ function setSmartLoading(isLoading, message = "") {
   }
 }
 
+function openDraftFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const encodedDraft = params.get("draft");
+  if (!encodedDraft) return;
+
+  try {
+    const draft = JSON.parse(decodeDraftValue(encodedDraft));
+    openDrawer();
+    if (draft.url) {
+      elements.smartUrlInput.value = draft.url;
+    }
+    const filledCount = applyExtractedJob(draft);
+    elements.smartResult.textContent = filledCount
+      ? `Extension drafted ${filledCount} fields. Review before saving.`
+      : "Extension opened an empty draft. Review before saving.";
+  } catch {
+    openDrawer();
+    elements.smartResult.textContent = "The extension draft could not be read.";
+  } finally {
+    window.history.replaceState({}, document.title, window.location.pathname);
+  }
+}
+
+function decodeDraftValue(value) {
+  const bytes = Uint8Array.from(atob(value), (character) => character.charCodeAt(0));
+  return new TextDecoder().decode(bytes);
+}
+
 function parseJobPost(rawText) {
   const text = rawText.replace(/\r/g, "").trim();
   const lines = text
@@ -592,23 +663,37 @@ function extractCompensation(text) {
 }
 
 function extractLocation(lines, text) {
-  const labeled = matchLabeledValue(lines, ["location", "job location", "office", "work location"]);
+  const labeled = matchLabeledValue(lines, ["location", "locations", "job location", "office", "work location"]);
   if (labeled) return labeled;
 
-  const remoteMatch = text.match(/\b(remote|hybrid|on-site|onsite)\b(?:\s*[-,]\s*[A-Za-z .,-]+)?/i);
+  const jobDetailsLocation = extractJobDetailsLocation(lines);
+  if (jobDetailsLocation) return jobDetailsLocation;
+
+  const topLocation = lines
+    .slice(0, 40)
+    .map((line) => extractLocationFromLine(line))
+    .find(Boolean);
+  if (topLocation) return topLocation;
+
+  const earlyText = lines.slice(0, 80).join("\n");
+  const remoteMatch = earlyText.match(/\b(remote|hybrid|on-site|onsite)\b(?:\s*[-,]\s*[A-Za-z .,-]+)?/i);
   if (remoteMatch) return cleanExtractedValue(remoteMatch[0]);
 
-  const cityState = text.match(/\b[A-Z][a-zA-Z .'-]+,\s?[A-Z]{2}\b/);
+  const cityState = earlyText.match(/\b[A-Z][a-zA-Z .'-]+,\s?[A-Z]{2}\b/)
+    || text.match(/\b[A-Z][a-zA-Z .'-]+,\s?[A-Z]{2}\b/);
   return cityState ? cleanExtractedValue(cityState[0]) : "";
 }
 
 function extractCompany(lines, text, url) {
-  const labeled = matchLabeledValue(lines, ["company", "company name", "employer", "organization"]);
+  const labeled = matchLabeledValue(lines, ["company", "company name", "employer", "hiring organization", "organization"]);
   if (labeled) return labeled;
 
+  const jobIdCompany = extractJobIdCompany(lines);
+  if (jobIdCompany) return jobIdCompany;
+
   const companyPatterns = [
-    /(?:at|with)\s+([A-Z][A-Za-z0-9&.,' -]{2,50})(?:\s+in|\s+-|\s+\||\n|$)/,
-    /([A-Z][A-Za-z0-9&.,' -]{2,50})\s+is\s+(?:hiring|seeking|looking)/i
+    /\bat\s+([A-Z][A-Za-z0-9&.,' -]{2,70})(?:\s+(?:in|for)\b|\s+-|\s+\||\n|$)/i,
+    /([A-Z][A-Za-z0-9&.,' -]{2,70})\s+is\s+(?:hiring|seeking|looking)/i
   ];
 
   for (const pattern of companyPatterns) {
@@ -616,16 +701,14 @@ function extractCompany(lines, text, url) {
     if (match) return cleanExtractedValue(match[1]);
   }
 
-  const companyLine = lines.find((line) => {
-    const lower = line.toLowerCase();
-    return line.length <= 56
-      && !looksLikeRole(line)
-      && !looksLikeLocation(line)
-      && !lower.includes("apply")
-      && !lower.includes("job");
-  });
+  const roleIndex = lines.slice(0, 30).findIndex((line) => looksLikeRole(line));
+  const nearbyLines = roleIndex >= 0
+    ? lines.slice(Math.max(0, roleIndex - 3), roleIndex + 7)
+    : lines.slice(0, 24);
+  const companyLine = nearbyLines.find((line) => looksLikeCompany(line))
+    || lines.slice(0, 24).find((line) => looksLikeCompany(line));
 
-  if (companyLine && lines.indexOf(companyLine) <= 3) return companyLine;
+  if (companyLine) return companyLine;
 
   if (!url) return "";
   try {
@@ -662,11 +745,20 @@ function extractRole(lines, company, location) {
 }
 
 function matchLabeledValue(lines, labels) {
-  for (const line of lines) {
+  const accepted = labels.map((label) => normalizeLabel(label));
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
     const match = line.match(/^([^:]+):\s*(.+)$/);
-    if (!match) continue;
-    const label = match[1].trim().toLowerCase();
-    if (labels.includes(label)) return cleanExtractedValue(match[2]);
+    if (match && accepted.includes(normalizeLabel(match[1]))) {
+      return cleanExtractedValue(match[2]);
+    }
+
+    if (accepted.includes(normalizeLabel(line.replace(/:$/, "")))) {
+      const nextValue = lines
+        .slice(index + 1, index + 4)
+        .find(Boolean);
+      if (nextValue) return cleanExtractedValue(nextValue);
+    }
   }
   return "";
 }
@@ -700,7 +792,76 @@ function looksLikeRole(line) {
 }
 
 function looksLikeLocation(line) {
-  return /\b(remote|hybrid|on-site|onsite)\b/i.test(line) || /\b[A-Z][a-zA-Z .'-]+,\s?[A-Z]{2}\b/.test(line);
+  return /\b(remote|hybrid|on-site|onsite)\b/i.test(line)
+    || /\b[A-Z][a-zA-Z .'-]+,\s?[A-Z]{2}\b/.test(line)
+    || /\b(?:USA?|Canada|UK),\s*[A-Z][A-Za-z .'-]+,\s*[A-Z][A-Za-z .'-]+\b/.test(line);
+}
+
+function extractLocationFromLine(line) {
+  if (!looksLikeLocation(line)) return "";
+
+  const countryStateCity = line.match(/\b(?:USA?|Canada|UK),\s*[A-Z][A-Za-z .'-]+,\s*[A-Z][A-Za-z .'-]+\b/);
+  if (countryStateCity) return cleanExtractedValue(countryStateCity[0]);
+
+  const cityState = line.match(/\b[A-Z][a-zA-Z .'-]+,\s?[A-Z]{2}\b/);
+  if (cityState) return cleanExtractedValue(cityState[0]);
+
+  const remote = line.match(/\b(remote|hybrid|on-site|onsite)\b(?:\s*[-,]\s*[A-Za-z .,-]+)?/i);
+  return remote ? cleanExtractedValue(remote[0]) : cleanExtractedValue(line);
+}
+
+function looksLikeCompany(line) {
+  const lower = line.toLowerCase();
+  const noise = [
+    "apply",
+    "career",
+    "search",
+    "sign in",
+    "saved",
+    "share",
+    "skip",
+    "job",
+    "description",
+    "requirement",
+    "benefit",
+    "location",
+    "salary",
+    "compensation",
+    "remote",
+    "hybrid",
+    "on-site",
+    "onsite",
+    "department",
+    "employment"
+  ];
+
+  return line.length >= 2
+    && line.length <= 80
+    && !looksLikeRole(line)
+    && !looksLikeLocation(line)
+    && !noise.some((word) => lower.includes(word));
+}
+
+function extractJobIdCompany(lines) {
+  for (const line of lines.slice(0, 30)) {
+    const match = line.match(/\bJob ID:\s*[^|\n]+\|\s*([^\n]+)/i);
+    if (match) return cleanExtractedValue(match[1]);
+  }
+  return "";
+}
+
+function extractJobDetailsLocation(lines) {
+  const jobDetailsIndex = lines.findIndex((line) => normalizeLabel(line) === "job details");
+  if (jobDetailsIndex < 0) return "";
+
+  return lines
+    .slice(jobDetailsIndex + 1, jobDetailsIndex + 18)
+    .map((line) => extractLocationFromLine(line))
+    .find(Boolean) || "";
+}
+
+function normalizeLabel(value) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 }
 
 function buildSmartNotes(text) {
@@ -856,6 +1017,84 @@ function countBy(items, key, fallback = "Unknown") {
 function safeDate(value, emptyLast = false) {
   if (!value) return emptyLast ? Number.MAX_SAFE_INTEGER : 0;
   return new Date(value).getTime();
+}
+
+function sortText(first, second) {
+  return String(first || "").localeCompare(String(second || ""), undefined, {
+    sensitivity: "base",
+    numeric: true
+  });
+}
+
+function sourceFilterKey(source) {
+  const value = String(source || "").trim().toLowerCase();
+  if (!value) return "unknown";
+
+  const canonicalSources = [
+    ["linkedin", "linkedin"],
+    ["indeed", "indeed"],
+    ["amazon", "amazon"],
+    ["greenhouse", "greenhouse"],
+    ["lever", "lever"],
+    ["workday", "workday"],
+    ["ashby", "ashby"],
+    ["wellfound", "wellfound"],
+    ["ziprecruiter", "ziprecruiter"],
+    ["glassdoor", "glassdoor"],
+    ["referral", "referral"],
+    ["company site", "company-site"],
+    ["browser extension", "browser-extension"]
+  ];
+  const match = canonicalSources.find(([needle]) => value.includes(needle));
+  return match ? match[1] : cssToken(value);
+}
+
+function sourceFilterLabel(key) {
+  const labels = {
+    all: "All",
+    unknown: "Unknown",
+    linkedin: "LinkedIn",
+    indeed: "Indeed",
+    amazon: "Amazon",
+    greenhouse: "Greenhouse",
+    lever: "Lever",
+    workday: "Workday",
+    ashby: "Ashby",
+    wellfound: "Wellfound",
+    ziprecruiter: "ZipRecruiter",
+    glassdoor: "Glassdoor",
+    referral: "Referral",
+    "company-site": "Company site",
+    "browser-extension": "Browser extension"
+  };
+  if (labels[key]) return labels[key];
+
+  return key
+    .split("-")
+    .filter(Boolean)
+    .map((word) => `${word.charAt(0).toUpperCase()}${word.slice(1)}`)
+    .join(" ");
+}
+
+function sourceFilterTone(key) {
+  const tones = {
+    all: "all",
+    linkedin: "cyan",
+    indeed: "lime",
+    amazon: "amber",
+    greenhouse: "green",
+    lever: "pink",
+    workday: "violet",
+    ashby: "orange",
+    wellfound: "red",
+    ziprecruiter: "blue",
+    glassdoor: "emerald",
+    referral: "magenta",
+    "company-site": "silver",
+    "browser-extension": "cyan",
+    unknown: "silver"
+  };
+  return tones[key] || "blue";
 }
 
 function startOfToday() {

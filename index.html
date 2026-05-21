@@ -83,21 +83,30 @@
         </section>
 
         <section class="controls" aria-label="Filters">
-          <label class="search-field">
-            <span aria-hidden="true">?</span>
-            <input id="searchInput" type="search" placeholder="Search role, company, location, notes">
-          </label>
-          <div class="control-row">
-            <select id="statusFilter" aria-label="Filter by status">
-              <option value="all">All statuses</option>
-            </select>
-            <select id="sortSelect" aria-label="Sort applications">
-              <option value="date-desc">Newest applied</option>
-              <option value="date-asc">Oldest applied</option>
-              <option value="company">Company A-Z</option>
-              <option value="followup">Follow-up date</option>
-              <option value="priority">Priority</option>
-            </select>
+          <div class="filter-topline">
+            <label class="search-field">
+              <span aria-hidden="true">?</span>
+              <input id="searchInput" type="search" placeholder="Search role, company, location, notes">
+            </label>
+            <div class="control-row">
+              <select id="statusFilter" aria-label="Filter by status">
+                <option value="all">All statuses</option>
+              </select>
+              <select id="sortSelect" aria-label="Sort applications">
+                <option value="date-desc">Newest to oldest</option>
+                <option value="date-asc">Oldest to newest</option>
+                <option value="role-asc">Alphabetical A-Z</option>
+                <option value="role-desc">Alphabetical Z-A</option>
+                <option value="company-asc">Company A-Z</option>
+                <option value="company-desc">Company Z-A</option>
+                <option value="followup">Follow-up date</option>
+                <option value="priority">Priority</option>
+              </select>
+            </div>
+          </div>
+          <div class="source-filter">
+            <span class="filter-label">Source</span>
+            <div id="sourceFilters" class="source-filters" aria-label="Filter by source"></div>
           </div>
         </section>
 
