@@ -98,6 +98,12 @@ const elements = {
   importButton: document.getElementById("importButton"),
   importFile: document.getElementById("importFile"),
   csvButton: document.getElementById("csvButton"),
+  smartUrlInput: document.getElementById("smartUrlInput"),
+  smartTextInput: document.getElementById("smartTextInput"),
+  extractTextButton: document.getElementById("extractTextButton"),
+  extractUrlButton: document.getElementById("extractUrlButton"),
+  clearSmartButton: document.getElementById("clearSmartButton"),
+  smartResult: document.getElementById("smartResult"),
   template: document.getElementById("jobCardTemplate")
 };
 
@@ -169,6 +175,9 @@ function bindEvents() {
   elements.importButton.addEventListener("click", () => elements.importFile.click());
   elements.importFile.addEventListener("change", importJson);
   elements.csvButton.addEventListener("click", exportCsv);
+  elements.extractTextButton.addEventListener("click", extractSmartDetails);
+  elements.extractUrlButton.addEventListener("click", extractSmartUrl);
+  elements.clearSmartButton.addEventListener("click", clearSmartAdd);
 
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape" && elements.drawer.classList.contains("open")) {
@@ -333,6 +342,7 @@ function renderBarChart(container, counts, order) {
 
 function openDrawer(job = null) {
   elements.form.reset();
+  clearSmartAdd();
   fields.dateApplied.valueAsDate = new Date();
   fields.priority.value = "Medium";
   fields.status.value = "Applied";
@@ -399,6 +409,317 @@ function saveForm(event) {
   saveJobs();
   closeDrawer();
   render();
+}
+
+function extractSmartDetails() {
+  const rawText = elements.smartTextInput.value.trim();
+  if (!rawText) {
+    elements.smartResult.textContent = "Paste a job post first.";
+    elements.smartTextInput.focus();
+    return;
+  }
+
+  const extracted = parseJobPost(rawText);
+  const filledCount = applyExtractedJob(extracted);
+
+  elements.smartResult.textContent = filledCount
+    ? `Filled ${filledCount} fields. Review before saving.`
+    : "No clear fields found. Try pasting more of the post.";
+}
+
+async function extractSmartUrl() {
+  const url = elements.smartUrlInput.value.trim();
+  if (!url) {
+    elements.smartResult.textContent = "Paste a job link first.";
+    elements.smartUrlInput.focus();
+    return;
+  }
+
+  if (!/^https?:\/\//i.test(url)) {
+    elements.smartResult.textContent = "Use a full link that starts with http or https.";
+    elements.smartUrlInput.focus();
+    return;
+  }
+
+  setSmartLoading(true, "Reading link...");
+
+  try {
+    const response = await fetch("/api/extract-job", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url, fallbackText: elements.smartTextInput.value.trim() })
+    });
+
+    const payload = await response.json();
+    if (!response.ok) {
+      throw new Error(payload.error || "Could not extract this link.");
+    }
+
+    const filledCount = applyExtractedJob(payload.job || {});
+    const methodLabel = payload.method === "ai" ? "AI extracted" : "Parsed";
+    elements.smartResult.textContent = filledCount
+      ? `${methodLabel} ${filledCount} fields. Review before saving.`
+      : "No clear fields found from this link.";
+  } catch (error) {
+    const fallbackText = elements.smartTextInput.value.trim();
+    if (fallbackText) {
+      const filledCount = applyExtractedJob(parseJobPost(`${url}\n${fallbackText}`));
+      elements.smartResult.textContent = filledCount
+        ? `Link failed, text fallback filled ${filledCount} fields.`
+        : "Link failed and fallback text did not parse.";
+    } else {
+      elements.smartResult.textContent = `${error.message} Paste the job text as fallback.`;
+    }
+  } finally {
+    setSmartLoading(false);
+  }
+}
+
+function applyExtractedJob(extracted) {
+  const fieldMap = {
+    role: extracted.role,
+    company: extracted.company,
+    location: extracted.location,
+    compensation: extracted.compensation,
+    source: extracted.source,
+    url: extracted.url || elements.smartUrlInput.value.trim(),
+    notes: extracted.notes
+  };
+
+  let filledCount = 0;
+  Object.entries(fieldMap).forEach(([key, value]) => {
+    if (!value) return;
+    fields[key].value = value;
+    filledCount += 1;
+  });
+
+  fields.dateApplied.value = todayInputValue();
+  fields.status.value = extracted.status && statuses.includes(extracted.status) ? extracted.status : "Applied";
+  fields.heardBack.value = String(Boolean(extracted.heardBack));
+  fields.followUp.value = extracted.followUp || addDaysInputValue(7);
+  fields.priority.value = ["High", "Medium", "Low"].includes(extracted.priority) ? extracted.priority : "Medium";
+
+  return filledCount;
+}
+
+function clearSmartAdd() {
+  elements.smartUrlInput.value = "";
+  elements.smartTextInput.value = "";
+  elements.smartResult.textContent = "";
+}
+
+function setSmartLoading(isLoading, message = "") {
+  elements.extractUrlButton.disabled = isLoading;
+  elements.extractTextButton.disabled = isLoading;
+  elements.clearSmartButton.disabled = isLoading;
+  if (isLoading || message) {
+    elements.smartResult.textContent = message;
+  }
+}
+
+function parseJobPost(rawText) {
+  const text = rawText.replace(/\r/g, "").trim();
+  const lines = text
+    .split("\n")
+    .map((line) => normalizeLine(line))
+    .filter(Boolean);
+
+  const url = extractUrl(text);
+  const source = inferSource(text, url);
+  const compensation = extractCompensation(text);
+  const location = extractLocation(lines, text);
+  const company = extractCompany(lines, text, url);
+  const role = extractRole(lines, company, location);
+  const notes = buildSmartNotes(text);
+
+  return {
+    role,
+    company,
+    location,
+    compensation,
+    source,
+    url,
+    notes
+  };
+}
+
+function extractUrl(text) {
+  const match = text.match(/https?:\/\/[^\s)]+/i);
+  return match ? match[0].replace(/[.,;]+$/, "") : "";
+}
+
+function inferSource(text, url) {
+  const combined = `${url} ${text}`.toLowerCase();
+  const sourceRules = [
+    ["linkedin", "LinkedIn"],
+    ["greenhouse", "Greenhouse"],
+    ["lever.co", "Lever"],
+    ["indeed", "Indeed"],
+    ["workday", "Workday"],
+    ["ashbyhq", "Ashby"],
+    ["wellfound", "Wellfound"],
+    ["ziprecruiter", "ZipRecruiter"],
+    ["monster", "Monster"],
+    ["glassdoor", "Glassdoor"]
+  ];
+
+  const match = sourceRules.find(([needle]) => combined.includes(needle));
+  if (match) return match[1];
+  if (!url) return "";
+
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "";
+  }
+}
+
+function extractCompensation(text) {
+  const salaryPatterns = [
+    /\$[\d,]{2,}(?:\s?[kK])?\s?(?:-|to|\u2013|\u2014)\s?\$?[\d,]{2,}(?:\s?[kK])?(?:\s?(?:\/|per)\s?(?:year|yr|hour|hr))?/i,
+    /\$[\d,]{2,}(?:\s?[kK])?(?:\s?(?:\/|per)\s?(?:year|yr|hour|hr))?/i,
+    /(?:salary|compensation|pay range|base pay)[:\s]+([^\n]{6,80})/i
+  ];
+
+  for (const pattern of salaryPatterns) {
+    const match = text.match(pattern);
+    if (match) return cleanExtractedValue(match[1] || match[0]);
+  }
+  return "";
+}
+
+function extractLocation(lines, text) {
+  const labeled = matchLabeledValue(lines, ["location", "job location", "office", "work location"]);
+  if (labeled) return labeled;
+
+  const remoteMatch = text.match(/\b(remote|hybrid|on-site|onsite)\b(?:\s*[-,]\s*[A-Za-z .,-]+)?/i);
+  if (remoteMatch) return cleanExtractedValue(remoteMatch[0]);
+
+  const cityState = text.match(/\b[A-Z][a-zA-Z .'-]+,\s?[A-Z]{2}\b/);
+  return cityState ? cleanExtractedValue(cityState[0]) : "";
+}
+
+function extractCompany(lines, text, url) {
+  const labeled = matchLabeledValue(lines, ["company", "company name", "employer", "organization"]);
+  if (labeled) return labeled;
+
+  const companyPatterns = [
+    /(?:at|with)\s+([A-Z][A-Za-z0-9&.,' -]{2,50})(?:\s+in|\s+-|\s+\||\n|$)/,
+    /([A-Z][A-Za-z0-9&.,' -]{2,50})\s+is\s+(?:hiring|seeking|looking)/i
+  ];
+
+  for (const pattern of companyPatterns) {
+    const match = text.match(pattern);
+    if (match) return cleanExtractedValue(match[1]);
+  }
+
+  const companyLine = lines.find((line) => {
+    const lower = line.toLowerCase();
+    return line.length <= 56
+      && !looksLikeRole(line)
+      && !looksLikeLocation(line)
+      && !lower.includes("apply")
+      && !lower.includes("job");
+  });
+
+  if (companyLine && lines.indexOf(companyLine) <= 3) return companyLine;
+
+  if (!url) return "";
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, "");
+    return host.split(".")[0].replace(/[-_]/g, " ");
+  } catch {
+    return "";
+  }
+}
+
+function extractRole(lines, company, location) {
+  const labeled = matchLabeledValue(lines, ["job title", "title", "role", "position"]);
+  if (labeled) return labeled;
+
+  const roleLine = lines.find((line, index) => {
+    if (index > 8) return false;
+    if (line === company || line === location) return false;
+    return looksLikeRole(line);
+  });
+
+  if (roleLine) return roleLine;
+
+  const firstUsefulLine = lines.find((line) => {
+    const lower = line.toLowerCase();
+    return line.length <= 72
+      && line !== company
+      && line !== location
+      && !lower.includes("apply")
+      && !lower.includes("job description")
+      && !lower.includes("about us");
+  });
+
+  return firstUsefulLine || "";
+}
+
+function matchLabeledValue(lines, labels) {
+  for (const line of lines) {
+    const match = line.match(/^([^:]+):\s*(.+)$/);
+    if (!match) continue;
+    const label = match[1].trim().toLowerCase();
+    if (labels.includes(label)) return cleanExtractedValue(match[2]);
+  }
+  return "";
+}
+
+function looksLikeRole(line) {
+  const lower = line.toLowerCase();
+  const roleWords = [
+    "engineer",
+    "developer",
+    "designer",
+    "manager",
+    "analyst",
+    "associate",
+    "specialist",
+    "coordinator",
+    "director",
+    "lead",
+    "intern",
+    "consultant",
+    "administrator",
+    "representative",
+    "scientist",
+    "architect",
+    "product",
+    "marketing",
+    "sales",
+    "operations",
+    "success"
+  ];
+  return line.length <= 82 && roleWords.some((word) => lower.includes(word));
+}
+
+function looksLikeLocation(line) {
+  return /\b(remote|hybrid|on-site|onsite)\b/i.test(line) || /\b[A-Z][a-zA-Z .'-]+,\s?[A-Z]{2}\b/.test(line);
+}
+
+function buildSmartNotes(text) {
+  const compact = text
+    .split("\n")
+    .map((line) => normalizeLine(line))
+    .filter(Boolean)
+    .slice(0, 12)
+    .join("\n");
+
+  return compact.length > 900 ? `${compact.slice(0, 900).trim()}...` : compact;
+}
+
+function normalizeLine(line) {
+  return line.replace(/\s+/g, " ").trim();
+}
+
+function cleanExtractedValue(value) {
+  return normalizeLine(value)
+    .replace(/^[\-\u2013\u2014|]+/, "")
+    .replace(/[\-\u2013\u2014|]+$/, "")
+    .trim();
 }
 
 function deleteCurrentJob() {
@@ -534,6 +855,23 @@ function startOfToday() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   return today;
+}
+
+function todayInputValue() {
+  return dateToInputValue(new Date());
+}
+
+function addDaysInputValue(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return dateToInputValue(date);
+}
+
+function dateToInputValue(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function priorityRank(priority) {

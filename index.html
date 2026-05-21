@@ -195,6 +195,29 @@
 
         <input type="hidden" id="jobId">
 
+        <section class="smart-add" aria-label="Smart add">
+          <div class="smart-add-head">
+            <div>
+              <h3>Smart Add</h3>
+              <p>Paste a job link or job post and Antri will prefill the fields it can recognize.</p>
+            </div>
+            <span id="smartResult" class="smart-result" aria-live="polite"></span>
+          </div>
+          <label class="full-span">
+            Job post link
+            <input id="smartUrlInput" type="url" placeholder="https://boards.greenhouse.io/company/jobs/12345">
+          </label>
+          <label class="full-span">
+            Job post text fallback
+            <textarea id="smartTextInput" rows="6" placeholder="Optional: paste the job post text if the link cannot be fetched"></textarea>
+          </label>
+          <div class="smart-add-actions">
+            <button class="ghost-button" type="button" id="clearSmartButton">Clear</button>
+            <button class="ghost-button" type="button" id="extractTextButton">Extract from text</button>
+            <button class="primary-button" type="button" id="extractUrlButton">Extract from link</button>
+          </div>
+        </section>
+
         <div class="form-grid">
           <label>
             Job role

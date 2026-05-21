@@ -720,6 +720,48 @@ a:focus-visible {
   margin-bottom: 18px;
 }
 
+.smart-add {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid var(--accent-line);
+  border-radius: var(--radius);
+  background: var(--accent-soft);
+}
+
+.smart-add-head,
+.smart-add-actions {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.smart-add-head h3 {
+  margin-bottom: 4px;
+}
+
+.smart-add-head p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.smart-result {
+  flex: 0 0 220px;
+  min-height: 22px;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 850;
+  text-align: right;
+}
+
+.smart-add textarea {
+  min-height: 132px;
+  background: var(--panel);
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -840,6 +882,16 @@ label textarea {
 
   .drawer {
     padding: 18px;
+  }
+
+  .smart-add-head,
+  .smart-add-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .smart-result {
+    text-align: left;
   }
 
   .drawer-actions {

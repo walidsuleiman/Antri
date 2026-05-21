@@ -58,6 +58,7 @@ The app also includes dashboard metrics, search, filtering, sorting, follow-up t
 ## Features
 
 - **Application tracking:** Store each job as its own entity with the details that matter.
+- **Smart Add:** Paste a job link or job post and let Antri prefill fields like role, company, location, compensation, source, URL, and notes.
 - **Pipeline visibility:** See total applications, active opportunities, responses, and due follow-ups.
 - **Search and filters:** Quickly find roles by company, location, status, source, notes, or contact.
 - **Follow-up view:** Keep upcoming and overdue next actions visible.
@@ -75,15 +76,21 @@ This version is a dependency-free static web app built with:
 - CSS
 - JavaScript
 - Browser `localStorage`
+- Python local backend for experimental link extraction
+- OpenAI API structured extraction when `OPENAI_API_KEY` is configured
+- Local heuristic parsing as a fallback
 
-It is intentionally lightweight and can run without a backend, database, login system, or build step.
+The tracker itself is lightweight and can run without a database, login system, or build step. The Phase 2 link extraction experiment requires the local Python backend because browsers cannot reliably fetch job pages directly and API keys should not be stored in frontend code.
 
 ## Run Locally
 
-Open `index.html` directly in a browser, or serve the folder locally:
+For basic static tracking, open `index.html` directly in a browser.
+
+For Smart Add link extraction, set your OpenAI API key and run the local backend:
 
 ```powershell
-python -m http.server 4173 --bind 127.0.0.1
+$env:OPENAI_API_KEY="your_api_key_here"
+python server.py
 ```
 
 Then visit:
@@ -98,7 +105,7 @@ The long-term vision is for Antri to reduce manual tracking as much as possible.
 
 Possible future improvements:
 
-- Paste a job posting URL and auto-fill the role, company, location, salary, and job description.
+- Move Smart Add link extraction to a hosted backend or serverless function.
 - Connect Gmail or Outlook to detect application confirmations, recruiter replies, rejections, and interview invites.
 - Automatically update application status from email activity.
 - Add reminders for follow-ups.
