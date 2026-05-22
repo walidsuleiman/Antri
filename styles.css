@@ -268,6 +268,18 @@ button {
   display: none;
 }
 
+.auth-privacy-link {
+  width: fit-content;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.auth-privacy-link:hover {
+  color: var(--accent);
+}
+
 .auth-preview {
   position: relative;
   display: grid;
@@ -524,6 +536,22 @@ button {
   font-weight: 700;
 }
 
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-footer a {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.sidebar-footer a:hover {
+  color: var(--accent);
+}
+
 .workspace {
   width: min(1480px, 100%);
   margin: 0 auto;
@@ -722,6 +750,8 @@ h3 {
 }
 
 .account-action {
+  display: flex;
+  align-items: center;
   min-height: 38px;
   width: 100%;
   padding: 9px 10px;
@@ -731,6 +761,7 @@ h3 {
   color: var(--ink);
   font-weight: 750;
   text-align: left;
+  text-decoration: none;
 }
 
 .account-action:hover {
