@@ -1,5 +1,7 @@
-const ANTRI_URL = "http://127.0.0.1:4173/index.html";
-const EXTRACT_URL = "http://127.0.0.1:4173/api/extract-page";
+const ANTRI_ORIGINS = [
+  "https://antri.xyz",
+  "https://antri.onrender.com"
+];
 
 const saveButton = document.getElementById("saveButton");
 const status = document.getElementById("status");
@@ -25,31 +27,41 @@ async function saveCurrentJob() {
     }
 
     setStatus("Extracting with Antri...", true);
-    let response;
-    try {
-      response = await fetch(EXTRACT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          url: page.url,
-          pageTitle: page.title,
-          pageText: page.text
-        })
-      });
-    } catch {
-      throw new Error("Start the local Antri backend, then try again.");
-    }
+    const { response, origin } = await extractWithAvailableAntri(page);
     const payload = await response.json();
     if (!response.ok) {
       throw new Error(payload.error || "Antri could not extract this page.");
     }
 
     const draft = encodeDraft(payload.job || {});
-    await chrome.tabs.create({ url: `${ANTRI_URL}?draft=${encodeURIComponent(draft)}` });
+    await chrome.tabs.create({ url: `${origin}/index.html?draft=${encodeURIComponent(draft)}` });
     setStatus(`${payload.method === "ai" ? "AI draft" : "Draft"} opened in Antri.`, false);
   } catch (error) {
     setStatus(error.message || "Could not save this job.", false);
   }
+}
+
+async function extractWithAvailableAntri(page) {
+  const body = JSON.stringify({
+    url: page.url,
+    pageTitle: page.title,
+    pageText: page.text
+  });
+
+  for (const origin of ANTRI_ORIGINS) {
+    try {
+      const response = await fetch(`${origin}/api/extract-page`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body
+      });
+      return { response, origin };
+    } catch {
+      // Try the next deployed Antri origin.
+    }
+  }
+
+  throw new Error("Could not reach Antri. Try again after the website is available.");
 }
 
 function captureVisibleJobPage() {

@@ -147,17 +147,17 @@ If Antri finds older browser-saved cards and the signed-in account has no cloud 
 
 ## Load The Chrome Extension
 
-1. Start the Antri backend with `python server.py`.
-2. Keep `http://127.0.0.1:4173/index.html` available locally.
+1. Keep Antri available at `https://antri.xyz` or `https://antri.onrender.com`.
+2. For local extension testing, edit the extension URLs in `extension/popup.js` back to the local backend.
 3. Open `chrome://extensions` in Chrome.
 4. Turn on **Developer mode**.
 5. Click **Load unpacked**.
 6. Select the `extension` folder inside this project.
 7. Open a job posting in Chrome, click the Antri extension, and choose **Save current job**.
 
-For the best extraction quality, set `OPENAI_API_KEY` before starting the backend. Without it, the extension still opens a draft from Antri's local fallback parser, but the draft will usually need more cleanup.
+For the best extraction quality, the deployed backend needs `OPENAI_API_KEY` configured. Without it, the extension still opens a draft from Antri's fallback parser, but the draft will usually need more cleanup.
 
-The browser saver works differently from Smart Add links: it reads the job page after Chrome has rendered it, sends the visible page text to the local Antri backend, then opens a new Antri tab with a draft application ready to review and save.
+The browser saver works differently from Smart Add links: it reads the job page after Chrome has rendered it, sends the visible page text to the Antri backend, then opens a new Antri tab with a draft application ready to review and save.
 
 ## Future Direction
 

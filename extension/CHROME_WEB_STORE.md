@@ -1,0 +1,82 @@
+# Antri Job Saver Chrome Web Store Copy
+
+## Listing
+
+### Name
+
+Antri Job Saver
+
+### Short description
+
+Save the job posting you are viewing into Antri as a draft application record.
+
+### Detailed description
+
+Antri Job Saver turns the job posting you are viewing into a draft inside Antri.
+
+When you click Save current job, the extension reads visible job-posting details from the active page you selected, sends that page data to Antri for extraction, and opens a draft application record for your review.
+
+Use it to reduce manual copy and paste while tracking job roles, companies, locations, job links, notes, statuses, and follow-ups in Antri.
+
+The extension only runs when you click it on the page you want to save. It is designed for job-posting capture and does not automatically scan your browsing activity.
+
+## Visibility
+
+Choose `Unlisted` for family-and-friends beta distribution.
+
+## Privacy Policy URL
+
+Use:
+
+```text
+https://antri.xyz/privacy.html
+```
+
+Until the custom domain resolves, use:
+
+```text
+https://antri.onrender.com/privacy.html
+```
+
+## Single Purpose
+
+Create an Antri job application draft from the job posting the user is actively viewing and chooses to save.
+
+## Permission Justifications
+
+### `activeTab`
+
+Needed to access the current job-posting tab only after the user clicks Save current job.
+
+### `scripting`
+
+Needed to read visible job-posting text and structured job posting data from the active page the user selected.
+
+### `tabs`
+
+Needed to identify the active tab and open the resulting draft in Antri.
+
+### Host permissions
+
+`https://antri.xyz/*` and `https://antri.onrender.com/*` are needed to send the selected job-posting data to Antri's extraction endpoint and open the resulting draft in the Antri web app.
+
+## Data Disclosure Notes
+
+The extension may transmit the selected job page URL, page title, visible job-page text, and structured job posting details after the user clicks Save current job.
+
+That data is used to extract fields for an Antri draft application record. Job-posting text may be processed by Antri's AI extraction provider when AI extraction is enabled. The user reviews the draft before saving it into their Antri account.
+
+The extension does not automatically scan browsing activity, sell extension page data, or use extension page data for advertising.
+
+## Reviewer Notes
+
+1. Open a public job posting page.
+2. Click the Antri Job Saver toolbar action.
+3. Click Save current job.
+4. The extension captures the selected job page and opens a draft inside Antri.
+5. Sign in to Antri if prompted, then review the draft before saving.
+
+## Submission Assets Still Needed In Dashboard
+
+- At least one screenshot for the store listing.
+- The Chrome Web Store small promotional tile requested by the dashboard.
