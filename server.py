@@ -10,7 +10,7 @@ import re
 import sys
 
 
-HOST = "127.0.0.1"
+HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "4173"))
 MODEL = os.environ.get("ANTRI_OPENAI_MODEL", "gpt-4o-mini")
 
@@ -86,6 +86,10 @@ class VisibleTextParser(HTMLParser):
 
 
 class Handler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
     def do_POST(self):
         if self.path not in {"/api/extract-job", "/api/extract-page"}:
             self.send_json({"error": "Not found"}, 404)

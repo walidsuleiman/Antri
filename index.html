@@ -8,7 +8,93 @@
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <div class="app-shell">
+    <section id="authGate" class="auth-shell" aria-label="Antri account access">
+      <div class="auth-layout">
+        <div class="auth-panel">
+          <div class="auth-brand">
+            <img class="auth-mark" src="assets/antri-mark.svg" alt="" aria-hidden="true">
+            <strong>Antri</strong>
+          </div>
+
+          <div class="auth-copy">
+            <p class="eyebrow">Organize the hunt</p>
+            <h1>Bring every application back into one pipeline.</h1>
+            <p>Track the role, reply, status, follow-up, and notes without rebuilding the search from memory.</p>
+          </div>
+
+          <div class="oauth-stack">
+            <button class="oauth-button google" type="button" id="googleAuthButton">
+              <span aria-hidden="true"><img src="assets/google-g.svg" alt=""></span>
+              Continue with Google
+            </button>
+          </div>
+
+          <div class="auth-divider"><span>or continue with email</span></div>
+
+          <div class="auth-mode" role="group" aria-label="Email account mode">
+            <button class="active" type="button" data-auth-mode="login">Log in</button>
+            <button type="button" data-auth-mode="signup">Create account</button>
+          </div>
+
+          <form id="authForm" class="auth-form">
+            <label>
+              Email
+              <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+            </label>
+            <label>
+              Password
+              <input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters">
+            </label>
+            <button class="primary-button auth-submit" type="submit" id="authSubmitButton">Log in with email</button>
+          </form>
+
+          <output id="authStatus" class="auth-status" aria-live="polite"></output>
+        </div>
+
+        <section class="auth-preview" aria-label="Application tracking preview">
+          <div class="auth-noise" aria-hidden="true">
+            <span>Greenhouse</span>
+            <span>Inbox</span>
+            <span>Company site</span>
+            <span>Referral</span>
+          </div>
+          <div class="auth-preview-head">
+            <p class="eyebrow">One search view</p>
+            <strong>Scattered applications become next actions.</strong>
+          </div>
+          <div class="auth-preview-board" aria-hidden="true">
+            <article class="preview-job active">
+              <div>
+                <strong>Data Analyst</strong>
+                <span>Applied May 22</span>
+              </div>
+              <em>Follow-up due</em>
+            </article>
+            <article class="preview-job">
+              <div>
+                <strong>Product Associate</strong>
+                <span>Recruiter replied</span>
+              </div>
+              <em>Interviewing</em>
+            </article>
+            <article class="preview-job">
+              <div>
+                <strong>Software Engineer</strong>
+                <span>Saved from browser</span>
+              </div>
+              <em>Review</em>
+            </article>
+          </div>
+          <div class="auth-preview-metrics" aria-hidden="true">
+            <span><strong>18</strong> tracked</span>
+            <span><strong>4</strong> replies</span>
+            <span><strong>2</strong> due today</span>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <div id="appShell" class="app-shell" hidden>
       <aside class="sidebar" aria-label="Workspace navigation">
         <div class="brand">
           <img class="brand-mark" src="assets/antri-mark.svg" alt="" aria-hidden="true">
@@ -59,9 +145,31 @@
               <span aria-hidden="true">+</span>
               Add job
             </button>
+            <div class="account-menu" id="accountMenu">
+              <button
+                class="account-trigger"
+                type="button"
+                id="accountMenuButton"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                title="Account menu"
+              >
+                <span class="account-avatar" aria-hidden="true"></span>
+                <span class="account-chevron" aria-hidden="true"></span>
+                <span class="sr-only">Open account menu</span>
+              </button>
+              <div class="account-dropdown" id="accountDropdown" role="menu" hidden>
+                <div class="account-identity">
+                  <span>Signed in as</span>
+                  <strong id="accountEmail"></strong>
+                </div>
+                <button class="account-action" type="button" id="signOutButton" role="menuitem">Sign out</button>
+              </div>
+            </div>
             <input id="importFile" type="file" accept="application/json" hidden>
           </div>
         </header>
+        <output id="syncStatus" class="sync-status" aria-live="polite"></output>
 
         <section class="metric-grid" aria-label="Application summary">
           <article class="metric">
@@ -199,7 +307,9 @@
             <p class="eyebrow">Application record</p>
             <h2 id="drawerTitle">Add job</h2>
           </div>
-          <button class="icon-button" type="button" id="closeDrawerButton" title="Close">x</button>
+          <button class="drawer-close" type="button" id="closeDrawerButton" title="Close job form" aria-label="Close job form">
+            <span aria-hidden="true"></span>
+          </button>
         </div>
 
         <input type="hidden" id="jobId">
@@ -320,6 +430,8 @@
       </article>
     </template>
 
-    <script src="app.js"></script>
+    <script src="auth-config.js?v=auth-redesign-1"></script>
+    <script src="auth-client.js?v=auth-redesign-1"></script>
+    <script src="app.js?v=auth-redesign-1"></script>
   </body>
 </html>

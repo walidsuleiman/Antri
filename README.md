@@ -66,7 +66,8 @@ The app also includes dashboard metrics, search, filtering, sorting, follow-up t
 - **Follow-up view:** Keep upcoming and overdue next actions visible.
 - **Insights:** View status distribution and source performance.
 - **Import/export:** Export data as JSON or CSV and import Antri JSON files.
-- **Local persistence:** Saves data in the browser with `localStorage`.
+- **Account gate:** Requires a Supabase-authenticated account before the tracker opens.
+- **Per-user cloud persistence:** Saves application cards in Supabase behind per-account Row Level Security policies.
 - **Responsive UI:** Works across desktop and mobile layouts.
 - **System-aware theme:** Uses a black, white, and grey palette with a cobalt accent, following the user's light/dark mode setting.
 
@@ -77,13 +78,14 @@ This version is a dependency-free static web app built with:
 - HTML
 - CSS
 - JavaScript
-- Browser `localStorage`
+- Supabase database storage for application cards
+- Supabase Auth for email and Google login entry points
 - Python local backend for experimental link extraction
 - OpenAI API structured extraction when `OPENAI_API_KEY` is configured
 - Local heuristic parsing as a fallback
 - Chrome extension prototype in `extension/`
 
-The tracker itself is lightweight and can run without a database, login system, or build step. The Phase 2 link extraction experiment requires the local Python backend because browsers cannot reliably fetch job pages directly and API keys should not be stored in frontend code.
+The tracker itself is lightweight and has no frontend build step. Login and the Supabase `job_applications` table are required for application cards to sync across browsers and devices. The Phase 2 link extraction experiment requires the local Python backend because browsers cannot reliably fetch job pages directly and API keys should not be stored in frontend code.
 
 Smart Add link extraction is currently most reliable for canonical Greenhouse and Lever posting URLs, for example:
 
@@ -98,9 +100,7 @@ For LinkedIn, Indeed, Workday, and other pages that block backend URL fetching, 
 
 ## Run Locally
 
-For basic static tracking, open `index.html` directly in a browser.
-
-For Smart Add link extraction, set your OpenAI API key and run the local backend:
+Run the local backend:
 
 ```powershell
 $env:OPENAI_API_KEY="your_api_key_here"
@@ -112,6 +112,38 @@ Then visit:
 ```text
 http://127.0.0.1:4173/index.html
 ```
+
+The OpenAI API key is only needed for AI extraction. Antri still serves the login UI and local fallback parsing without it.
+
+## Configure Login
+
+Antri uses Supabase Auth for account login. The browser calls Supabase Auth directly from local Antri code, so login does not depend on a package CDN being reachable.
+
+1. Create a Supabase project.
+2. In `auth-config.js`, set your project URL and public browser key:
+
+   ```js
+   window.ANTRI_SUPABASE_CONFIG = {
+     url: "https://your-project.supabase.co",
+     anonKey: "your-public-anon-or-publishable-key"
+   };
+   ```
+
+3. Keep Email auth enabled in Supabase.
+4. Enable the Google provider in Supabase if you want the Google login button to complete sign-in.
+5. Add the local Antri URL to the allowed auth redirect URLs while developing:
+
+   ```text
+   http://127.0.0.1:4173/index.html
+   ```
+
+Do not put a Supabase service role key or any private backend secret in `auth-config.js`. It is a browser-loaded config file.
+
+6. Open Supabase **SQL Editor**, paste the contents of `supabase/job_applications.sql`, and run it.
+
+The SQL creates the `job_applications` table and Row Level Security policies so signed-in users can only read and write their own application rows.
+
+If Antri finds older browser-saved cards and the signed-in account has no cloud cards yet, it offers to upload those local cards once.
 
 ## Load The Chrome Extension
 
@@ -139,7 +171,7 @@ Possible future improvements:
 - Connect Gmail or Outlook to detect application confirmations, recruiter replies, rejections, and interview invites.
 - Automatically update application status from email activity.
 - Add reminders for follow-ups.
-- Add user accounts and cloud sync.
+- Add richer cloud sync conflict handling and account settings.
 - Support browser extension saving from job boards.
 - Add AI-assisted parsing from job descriptions, emails, or screenshots.
 - Introduce paid tiers for automation, sync, and advanced insights.

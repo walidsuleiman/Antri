@@ -1,5 +1,28 @@
+const ANTRI_SUPABASE_CONFIG = window.ANTRI_SUPABASE_CONFIG || {};
+
 const STORAGE_KEY = "antri.applications.v1";
+const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user`;
 const LEGACY_STORAGE_KEY = "jobflow.applications.v1";
+const CLOUD_MIGRATION_PREFIX = `${STORAGE_KEY}.cloud-migrated`;
+const CLOUD_TABLE = "job_applications";
+const CLOUD_COLUMNS = [
+  "id",
+  "role",
+  "company",
+  "location",
+  "date_applied",
+  "heard_back",
+  "status",
+  "priority",
+  "compensation",
+  "source",
+  "contact",
+  "url",
+  "follow_up",
+  "notes",
+  "created_at",
+  "updated_at"
+].join(",");
 
 const statuses = [
   "Saved",
@@ -11,62 +34,30 @@ const statuses = [
   "Withdrawn"
 ];
 
-const sampleJobs = [
-  {
-    id: crypto.randomUUID(),
-    role: "Growth Product Manager",
-    company: "Northstar Labs",
-    location: "Remote",
-    dateApplied: "2026-05-12",
-    heardBack: true,
-    status: "Interviewing",
-    priority: "High",
-    compensation: "$115k-$145k",
-    source: "Referral",
-    contact: "Maya Chen",
-    url: "https://example.com/jobs/growth-product-manager",
-    followUp: "2026-05-22",
-    notes: "Recruiter screen complete. Prep examples for funnel analytics, experiments, and onboarding metrics."
-  },
-  {
-    id: crypto.randomUUID(),
-    role: "Customer Success Manager",
-    company: "Harbor Cloud",
-    location: "New York, NY",
-    dateApplied: "2026-05-09",
-    heardBack: false,
-    status: "Follow-up",
-    priority: "Medium",
-    compensation: "$82k-$100k",
-    source: "LinkedIn",
-    contact: "",
-    url: "https://example.com/jobs/customer-success-manager",
-    followUp: "2026-05-20",
-    notes: "Strong SaaS fit. Follow up with concise note focused on retention and expansion experience."
-  },
-  {
-    id: crypto.randomUUID(),
-    role: "Operations Analyst",
-    company: "CivicBridge",
-    location: "Washington, DC",
-    dateApplied: "2026-05-03",
-    heardBack: false,
-    status: "Applied",
-    priority: "Low",
-    compensation: "$70k-$88k",
-    source: "Company site",
-    contact: "",
-    url: "",
-    followUp: "",
-    notes: "Role emphasizes reporting, process improvement, and cross-functional stakeholder management."
-  }
-];
-
-let jobs = loadJobs();
+let jobs = [];
 let currentView = "pipeline";
 let activeSourceFilter = "all";
+let currentUser = null;
+let currentSession = null;
+let authClient = null;
+let authMode = "login";
 
 const elements = {
+  authGate: document.getElementById("authGate"),
+  appShell: document.getElementById("appShell"),
+  authForm: document.getElementById("authForm"),
+  authEmail: document.getElementById("authEmail"),
+  authPassword: document.getElementById("authPassword"),
+  authSubmitButton: document.getElementById("authSubmitButton"),
+  authStatus: document.getElementById("authStatus"),
+  authModeButtons: [...document.querySelectorAll("[data-auth-mode]")],
+  googleAuthButton: document.getElementById("googleAuthButton"),
+  syncStatus: document.getElementById("syncStatus"),
+  accountMenu: document.getElementById("accountMenu"),
+  accountMenuButton: document.getElementById("accountMenuButton"),
+  accountDropdown: document.getElementById("accountDropdown"),
+  signOutButton: document.getElementById("signOutButton"),
+  accountEmail: document.getElementById("accountEmail"),
   views: {
     pipeline: document.getElementById("pipelineView"),
     followups: document.getElementById("followupsView"),
@@ -126,31 +117,33 @@ const fields = {
   notes: document.getElementById("notesInput")
 };
 
-function loadJobs() {
-  const stored = localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY);
+function parseStoredJobs(stored) {
   if (!stored) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(sampleJobs));
-    return sampleJobs;
+    return [];
   }
 
   try {
     const parsed = JSON.parse(stored);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
-    return Array.isArray(parsed) ? parsed : sampleJobs;
+    return Array.isArray(parsed) ? parsed.map(normalizeJob) : [];
   } catch {
-    return sampleJobs;
+    return [];
   }
 }
 
-function saveJobs() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(jobs));
+function localJobsForCloudMigration(user) {
+  const userJobs = parseStoredJobs(localStorage.getItem(userStorageKey(user.id)));
+  if (userJobs.length) {
+    return userJobs;
+  }
+
+  return parseStoredJobs(localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY));
 }
 
-function init() {
+async function init() {
   populateStatusOptions();
   bindEvents();
-  render();
-  openDraftFromUrl();
+  setAuthMode("login");
+  await initializeAuth();
 }
 
 function populateStatusOptions() {
@@ -161,6 +154,14 @@ function populateStatusOptions() {
 }
 
 function bindEvents() {
+  elements.authForm.addEventListener("submit", submitEmailAuth);
+  elements.authModeButtons.forEach((button) => {
+    button.addEventListener("click", () => setAuthMode(button.dataset.authMode));
+  });
+  elements.googleAuthButton.addEventListener("click", () => startOAuth("google"));
+  elements.accountMenuButton.addEventListener("click", toggleAccountMenu);
+  elements.signOutButton.addEventListener("click", signOut);
+
   elements.navItems.forEach((item) => {
     item.addEventListener("click", () => switchView(item.dataset.view));
   });
@@ -182,11 +183,377 @@ function bindEvents() {
   elements.extractUrlButton.addEventListener("click", extractSmartUrl);
   elements.clearSmartButton.addEventListener("click", clearSmartAdd);
 
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && elements.drawer.classList.contains("open")) {
-      closeDrawer();
+  document.addEventListener("click", (event) => {
+    if (!elements.accountMenu.contains(event.target)) {
+      closeAccountMenu();
     }
   });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeAccountMenu();
+      if (elements.drawer.classList.contains("open")) {
+        closeDrawer();
+      }
+    }
+  });
+}
+
+async function initializeAuth() {
+  const config = ANTRI_SUPABASE_CONFIG || {};
+  if (!config.url || !config.anonKey) {
+    showSignedOutApp();
+    setAuthDisabled(false);
+    setAuthStatus("Add your Supabase project URL and public key in auth-config.js to enable account login.");
+    return;
+  }
+
+  authClient = window.createAntriAuthClient(config);
+  authClient.auth.onAuthStateChange((_event, session) => {
+    handleAuthSession(session);
+  });
+
+  const { data, error } = await authClient.auth.getSession();
+  if (error) {
+    showSignedOutApp();
+    setAuthStatus(error.message);
+    return;
+  }
+
+  await handleAuthSession(data.session);
+}
+
+async function handleAuthSession(session) {
+  if (!session?.user) {
+    showSignedOutApp();
+    return;
+  }
+
+  currentSession = session;
+  currentUser = session.user;
+  jobs = [];
+  elements.accountEmail.textContent = currentUser.email || "Signed in";
+  closeAccountMenu();
+  elements.authGate.hidden = true;
+  elements.appShell.hidden = false;
+  setAuthStatus("");
+  render();
+  setSyncStatus("Loading applications from cloud...");
+
+  try {
+    jobs = await loadCloudJobs();
+    jobs = await migrateLocalJobsToCloud(jobs);
+    render();
+    setSyncStatus(`Cloud synced. ${jobs.length} ${jobs.length === 1 ? "application" : "applications"} loaded.`, "success");
+    openDraftFromUrl();
+  } catch (error) {
+    render();
+    setSyncStatus(cloudStorageErrorMessage(error), "error");
+  }
+}
+
+function showSignedOutApp() {
+  currentSession = null;
+  currentUser = null;
+  jobs = [];
+  elements.authGate.hidden = false;
+  elements.appShell.hidden = true;
+  elements.accountEmail.textContent = "";
+  setSyncStatus("");
+  closeAccountMenu();
+  elements.drawer.classList.remove("open");
+  elements.drawer.setAttribute("aria-hidden", "true");
+  elements.drawer.inert = true;
+  elements.drawerBackdrop.hidden = true;
+}
+
+function setAuthMode(mode) {
+  authMode = mode === "signup" ? "signup" : "login";
+  const isSignup = authMode === "signup";
+  elements.authModeButtons.forEach((button) => {
+    button.classList.toggle("active", button.dataset.authMode === authMode);
+  });
+  elements.authPassword.autocomplete = isSignup ? "new-password" : "current-password";
+  elements.authSubmitButton.textContent = isSignup ? "Create account with email" : "Log in with email";
+}
+
+async function submitEmailAuth(event) {
+  event.preventDefault();
+  if (!authClient) {
+    setAuthStatus("Account login needs Supabase configuration first.");
+    return;
+  }
+
+  const email = elements.authEmail.value.trim();
+  const password = elements.authPassword.value;
+  setAuthBusy(true);
+  setAuthStatus(authMode === "signup" ? "Creating your account..." : "Logging in...");
+
+  try {
+    const result = authMode === "signup"
+      ? await authClient.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: authRedirectUrl() }
+      })
+      : await authClient.auth.signInWithPassword({ email, password });
+
+    if (result.error) throw result.error;
+    if (authMode === "signup" && !result.data.session) {
+      setAuthStatus("Check your email to confirm the account, then log in.");
+      setAuthMode("login");
+      return;
+    }
+
+    setAuthStatus("");
+  } catch (error) {
+    setAuthStatus(error.message || "Email login failed.");
+  } finally {
+    setAuthBusy(false);
+  }
+}
+
+async function startOAuth(provider) {
+  if (!authClient) {
+    setAuthStatus("Account login needs Supabase configuration first.");
+    return;
+  }
+
+  setAuthBusy(true);
+  setAuthStatus("Opening Google login...");
+  const { error } = await authClient.auth.signInWithOAuth({
+    provider,
+    options: { redirectTo: authRedirectUrl() }
+  });
+
+  if (error) {
+    setAuthBusy(false);
+    setAuthStatus(error.message);
+  }
+}
+
+async function signOut() {
+  if (!authClient) return;
+  closeAccountMenu();
+  const { error } = await authClient.auth.signOut();
+  if (error) {
+    setAuthStatus(error.message);
+    return;
+  }
+  showSignedOutApp();
+  setAuthBusy(false);
+  setAuthStatus("Signed out.");
+}
+
+function setAuthDisabled(disabled) {
+  [
+    elements.authEmail,
+    elements.authPassword,
+    elements.authSubmitButton,
+    elements.googleAuthButton,
+    ...elements.authModeButtons
+  ].forEach((control) => {
+    control.disabled = disabled;
+  });
+}
+
+function setAuthBusy(busy) {
+  setAuthDisabled(busy);
+}
+
+function setAuthStatus(message) {
+  elements.authStatus.textContent = message;
+}
+
+function setSyncStatus(message, tone = "") {
+  elements.syncStatus.textContent = message;
+  if (tone) {
+    elements.syncStatus.dataset.tone = tone;
+  } else {
+    delete elements.syncStatus.dataset.tone;
+  }
+}
+
+function toggleAccountMenu() {
+  const willOpen = elements.accountDropdown.hidden;
+  elements.accountDropdown.hidden = !willOpen;
+  elements.accountMenuButton.setAttribute("aria-expanded", String(willOpen));
+}
+
+function closeAccountMenu() {
+  elements.accountDropdown.hidden = true;
+  elements.accountMenuButton.setAttribute("aria-expanded", "false");
+}
+
+function authRedirectUrl() {
+  return `${window.location.origin}${window.location.pathname}`;
+}
+
+async function loadCloudJobs() {
+  const rows = await cloudRequest(
+    `${CLOUD_TABLE}?select=${encodeURIComponent(CLOUD_COLUMNS)}&order=date_applied.desc.nullslast,created_at.desc`
+  );
+  return Array.isArray(rows) ? rows.map(cloudRowToJob) : [];
+}
+
+async function migrateLocalJobsToCloud(cloudJobs) {
+  if (cloudJobs.length || !currentUser || localStorage.getItem(cloudMigrationKey(currentUser.id))) {
+    return cloudJobs;
+  }
+
+  const localJobs = localJobsForCloudMigration(currentUser);
+  if (!localJobs.length) {
+    localStorage.setItem(cloudMigrationKey(currentUser.id), "empty");
+    return cloudJobs;
+  }
+
+  const shouldUpload = confirm(
+    "Upload the Antri applications saved in this browser to this account's cloud storage?"
+  );
+  localStorage.setItem(cloudMigrationKey(currentUser.id), shouldUpload ? "uploaded" : "skipped");
+  if (!shouldUpload) {
+    return cloudJobs;
+  }
+
+  setSyncStatus("Uploading browser-saved applications to cloud...");
+  await upsertCloudJobs(localJobs);
+  return loadCloudJobs();
+}
+
+async function upsertCloudJobs(nextJobs) {
+  if (!nextJobs.length) {
+    return [];
+  }
+
+  const rows = nextJobs.map(jobToCloudRow);
+  const savedRows = await cloudRequest(
+    `${CLOUD_TABLE}?on_conflict=id&select=${encodeURIComponent(CLOUD_COLUMNS)}`,
+    {
+      method: "POST",
+      body: rows,
+      prefer: "resolution=merge-duplicates,return=representation"
+    }
+  );
+  return Array.isArray(savedRows) ? savedRows.map(cloudRowToJob) : [];
+}
+
+async function deleteCloudJob(id) {
+  await cloudRequest(`${CLOUD_TABLE}?id=eq.${encodeURIComponent(id)}`, {
+    method: "DELETE",
+    prefer: "return=minimal"
+  });
+}
+
+async function cloudRequest(path, { method = "GET", body, prefer = "" } = {}) {
+  const session = await getActiveSession();
+  const response = await fetch(`${trimTrailingSlash(ANTRI_SUPABASE_CONFIG.url)}/rest/v1/${path}`, {
+    method,
+    headers: {
+      apikey: ANTRI_SUPABASE_CONFIG.anonKey,
+      Authorization: `Bearer ${session.access_token}`,
+      Accept: "application/json",
+      ...(body ? { "Content-Type": "application/json" } : {}),
+      ...(prefer ? { Prefer: prefer } : {})
+    },
+    ...(body ? { body: JSON.stringify(body) } : {})
+  });
+  const payload = await parseCloudPayload(response);
+
+  if (!response.ok) {
+    throw new Error(readCloudError(payload, response.status));
+  }
+
+  return payload;
+}
+
+async function getActiveSession() {
+  if (!authClient) {
+    throw new Error("Log in again before syncing applications.");
+  }
+
+  const { data, error } = await authClient.auth.getSession();
+  if (error) {
+    throw error;
+  }
+  if (!data.session?.access_token) {
+    throw new Error("Your session expired. Log in again.");
+  }
+
+  currentSession = data.session;
+  currentUser = data.session.user;
+  return currentSession;
+}
+
+function jobToCloudRow(job) {
+  const normalized = normalizeJob(job);
+  return {
+    id: normalized.id,
+    user_id: currentUser.id,
+    role: normalized.role,
+    company: normalized.company,
+    location: normalized.location,
+    date_applied: normalized.dateApplied || null,
+    heard_back: normalized.heardBack,
+    status: normalized.status,
+    priority: normalized.priority,
+    compensation: normalized.compensation,
+    source: normalized.source,
+    contact: normalized.contact,
+    url: normalized.url,
+    follow_up: normalized.followUp || null,
+    notes: normalized.notes,
+    updated_at: new Date().toISOString()
+  };
+}
+
+function cloudRowToJob(row) {
+  return normalizeJob({
+    id: row.id,
+    role: row.role,
+    company: row.company,
+    location: row.location,
+    dateApplied: row.date_applied || "",
+    heardBack: row.heard_back,
+    status: row.status,
+    priority: row.priority,
+    compensation: row.compensation,
+    source: row.source,
+    contact: row.contact,
+    url: row.url,
+    followUp: row.follow_up || "",
+    notes: row.notes
+  });
+}
+
+async function parseCloudPayload(response) {
+  const text = await response.text();
+  if (!text) {
+    return [];
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+}
+
+function readCloudError(payload, status) {
+  return [
+    payload.message,
+    payload.details,
+    payload.hint,
+    payload.code ? `Code ${payload.code}` : ""
+  ].filter(Boolean).join(" ") || `Supabase data request failed with HTTP ${status}.`;
+}
+
+function cloudStorageErrorMessage(error) {
+  const message = error.message || "Unknown cloud sync error.";
+  if (/could not find the table|schema cache|PGRST205|42P01|relation .* does not exist/i.test(message)) {
+    return "Cloud storage is not ready. Run supabase/job_applications.sql in the Supabase SQL Editor, then refresh Antri.";
+  }
+
+  return `Cloud sync failed: ${message}`;
 }
 
 function switchView(viewName) {
@@ -421,7 +788,7 @@ function closeDrawer() {
   elements.openFormButton.focus();
 }
 
-function saveForm(event) {
+async function saveForm(event) {
   event.preventDefault();
 
   const id = fields.id.value || crypto.randomUUID();
@@ -442,16 +809,24 @@ function saveForm(event) {
     notes: fields.notes.value.trim()
   };
 
-  const existingIndex = jobs.findIndex((job) => job.id === id);
-  if (existingIndex >= 0) {
-    jobs[existingIndex] = nextJob;
-  } else {
-    jobs = [nextJob, ...jobs];
-  }
+  setSyncStatus("Saving application to cloud...");
 
-  saveJobs();
-  closeDrawer();
-  render();
+  try {
+    const [savedJob] = await upsertCloudJobs([nextJob]);
+    const cloudJob = savedJob || nextJob;
+    const existingIndex = jobs.findIndex((job) => job.id === id);
+    if (existingIndex >= 0) {
+      jobs[existingIndex] = cloudJob;
+    } else {
+      jobs = [cloudJob, ...jobs];
+    }
+
+    closeDrawer();
+    render();
+    setSyncStatus("Application saved to cloud.", "success");
+  } catch (error) {
+    setSyncStatus(cloudStorageErrorMessage(error), "error");
+  }
 }
 
 function extractSmartDetails() {
@@ -890,16 +1265,23 @@ function capitalize(value) {
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
-function deleteCurrentJob() {
+async function deleteCurrentJob() {
   const id = fields.id.value;
   if (!id) return;
   const job = jobs.find((item) => item.id === id);
   const label = job ? `${job.role} at ${job.company}` : "this job";
   if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
-  jobs = jobs.filter((job) => job.id !== id);
-  saveJobs();
-  closeDrawer();
-  render();
+
+  setSyncStatus("Deleting application from cloud...");
+  try {
+    await deleteCloudJob(id);
+    jobs = jobs.filter((item) => item.id !== id);
+    closeDrawer();
+    render();
+    setSyncStatus("Application deleted from cloud.", "success");
+  } catch (error) {
+    setSyncStatus(cloudStorageErrorMessage(error), "error");
+  }
 }
 
 function exportJson() {
@@ -911,15 +1293,18 @@ function importJson(event) {
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = () => {
+  reader.onload = async () => {
     try {
       const imported = JSON.parse(reader.result);
       if (!Array.isArray(imported)) throw new Error("Expected an array");
-      jobs = imported.map(normalizeJob);
-      saveJobs();
+      const normalizedJobs = imported.map(normalizeJob);
+      setSyncStatus("Importing applications to cloud...");
+      await upsertCloudJobs(normalizedJobs);
+      jobs = await loadCloudJobs();
       render();
+      setSyncStatus(`${normalizedJobs.length} ${normalizedJobs.length === 1 ? "application" : "applications"} imported to cloud.`, "success");
     } catch {
-      alert("That file could not be imported. Exported Antri JSON files are supported.");
+      setSyncStatus("Import failed. Use an exported Antri JSON file and confirm cloud storage is ready.", "error");
     } finally {
       elements.importFile.value = "";
     }
@@ -1017,6 +1402,14 @@ function countBy(items, key, fallback = "Unknown") {
 function safeDate(value, emptyLast = false) {
   if (!value) return emptyLast ? Number.MAX_SAFE_INTEGER : 0;
   return new Date(value).getTime();
+}
+
+function userStorageKey(userId) {
+  return `${USER_STORAGE_PREFIX}.${userId}`;
+}
+
+function cloudMigrationKey(userId) {
+  return `${CLOUD_MIGRATION_PREFIX}.${userId}`;
 }
 
 function sortText(first, second) {
@@ -1150,6 +1543,10 @@ function escapeHtml(value) {
     '"': "&quot;",
     "'": "&#039;"
   })[char]);
+}
+
+function trimTrailingSlash(value) {
+  return String(value || "").replace(/\/+$/, "");
 }
 
 init();
