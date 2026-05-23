@@ -33,7 +33,7 @@ async function saveCurrentJob() {
     }
 
     const draft = encodeDraft(payload.job || {});
-    await chrome.tabs.create({ url: `${origin}/index.html?draft=${encodeURIComponent(draft)}` });
+    await openAntriDraft(origin, draft);
     setStatus(`${payload.method === "ai" ? "AI draft" : "Draft"} opened in Antri.`, false);
   } catch (error) {
     setStatus(error.message || "Could not save this job.", false);
@@ -61,6 +61,20 @@ async function extractWithAvailableAntri(page) {
   }
 
   throw new Error("Could not reach Antri. Try again after the website is available.");
+}
+
+async function openAntriDraft(origin, draft) {
+  const draftUrl = `${origin}/index.html?draft=${encodeURIComponent(draft)}`;
+  const existingTabs = await chrome.tabs.query({ url: `${origin}/*` });
+  const existingTab = existingTabs.find((tab) => tab.id && tab.windowId);
+
+  if (!existingTab) {
+    await chrome.tabs.create({ url: draftUrl });
+    return;
+  }
+
+  await chrome.tabs.update(existingTab.id, { url: draftUrl, active: true });
+  await chrome.windows.update(existingTab.windowId, { focused: true });
 }
 
 function captureVisibleJobPage() {

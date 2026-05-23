@@ -18,6 +18,8 @@ When you click Save current job, the extension reads visible job-posting details
 
 Use it to reduce manual copy and paste while tracking job roles, companies, locations, job links, notes, statuses, and follow-ups in Antri.
 
+If Antri is already open, the extension reuses that tab instead of opening duplicate Antri tabs.
+
 The extension only runs when you click it on the page you want to save. It is designed for job-posting capture and does not automatically scan your browsing activity.
 
 ## Visibility
@@ -67,7 +69,7 @@ The extension does not automatically scan browsing activity, sell extension page
 1. Open a public job posting page.
 2. Click the Antri Job Saver toolbar action.
 3. Click Save current job.
-4. The extension captures the selected job page and opens a draft inside Antri.
+4. The extension captures the selected job page and opens a draft inside Antri, reusing an existing Antri tab when one is already open.
 5. Sign in to Antri if prompted, then review the draft before saving.
 
 ## Submission Assets Still Needed In Dashboard
