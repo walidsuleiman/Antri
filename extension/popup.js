@@ -107,11 +107,13 @@ function captureVisibleJobPage() {
         const title = firstText(posting.title, posting.name);
         const company = organizationName(posting.hiringOrganization);
         const locationLabel = jobPostingLocation(posting);
+        const compensation = jobPostingCompensation(posting);
         return [
           "Structured JobPosting data:",
           title ? `Job title: ${title}` : "",
           company ? `Company: ${company}` : "",
-          locationLabel ? `Location: ${locationLabel}` : ""
+          locationLabel ? `Location: ${locationLabel}` : "",
+          compensation ? `Compensation: ${compensation}` : ""
         ].filter(Boolean).join("\n");
       })
       .filter(Boolean)
@@ -155,6 +157,42 @@ function captureVisibleJobPage() {
     toList(posting.jobLocation).forEach((value) => values.push(...locationValues(value)));
     toList(posting.applicantLocationRequirements).forEach((value) => values.push(...locationValues(value)));
     return uniqueText(values).join(" - ");
+  }
+
+  function jobPostingCompensation(posting) {
+    return uniqueText(toList(posting.baseSalary).flatMap((salary) => salaryValues(salary))).join("; ");
+  }
+
+  function salaryValues(value) {
+    if (typeof value === "string") {
+      return [value.trim()];
+    }
+    if (!value || typeof value !== "object") {
+      return [];
+    }
+
+    const currency = firstText(value.currency, value.salaryCurrency);
+    const amount = value.value && typeof value.value === "object" ? value.value : value;
+    const minValue = amount.minValue != null ? formatPayNumber(amount.minValue) : "";
+    const maxValue = amount.maxValue != null ? formatPayNumber(amount.maxValue) : "";
+    const singleValue = amount.value != null ? formatPayNumber(amount.value) : "";
+    const unit = firstText(amount.unitText, amount.unit);
+
+    let label = "";
+    if (minValue && maxValue) {
+      label = `${currency} ${minValue} - ${maxValue}`.trim();
+    } else if (singleValue) {
+      label = `${currency} ${singleValue}`.trim();
+    }
+    return label ? [`${label}${unit ? ` per ${unit.toLowerCase()}` : ""}`] : [];
+  }
+
+  function formatPayNumber(value) {
+    const number = Number(String(value).replace(/,/g, ""));
+    if (!Number.isFinite(number)) {
+      return String(value).trim();
+    }
+    return number.toLocaleString(undefined, { maximumFractionDigits: Number.isInteger(number) ? 0 : 2 });
   }
 
   function locationValues(value) {

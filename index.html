@@ -323,22 +323,23 @@
         <section class="smart-add" aria-label="Smart add">
           <div class="smart-add-head">
             <div>
-              <h3>Smart Add</h3>
-              <p>Paste a job link or job post and Antri will prefill the fields it can recognize.</p>
+              <p class="smart-kicker">Smart Add</p>
+              <h3>Turn a posting into a draft.</h3>
+              <p>Paste a job link first. Add job text only when a site blocks extraction.</p>
             </div>
             <span id="smartResult" class="smart-result" aria-live="polite"></span>
           </div>
           <label class="full-span">
             Job post link
-            <input id="smartUrlInput" type="url" placeholder="https://boards.greenhouse.io/company/jobs/12345">
+            <input id="smartUrlInput" type="url" placeholder="Paste LinkedIn, Indeed, Greenhouse, Lever, Workday, or company job URL">
           </label>
           <label class="full-span">
-            Job post text fallback
-            <textarea id="smartTextInput" rows="6" placeholder="Optional: paste the job post text if the link cannot be fetched"></textarea>
+            Optional fallback text
+            <textarea id="smartTextInput" rows="4" placeholder="If the link fails, paste the visible job post text here"></textarea>
           </label>
           <div class="smart-add-actions">
-            <button class="ghost-button" type="button" id="clearSmartButton">Clear</button>
             <button class="ghost-button" type="button" id="extractTextButton">Extract from text</button>
+            <button class="ghost-button" type="button" id="clearSmartButton">Clear</button>
             <button class="primary-button" type="button" id="extractUrlButton">Extract from link</button>
           </div>
         </section>

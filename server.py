@@ -387,12 +387,14 @@ def job_posting_text(posting):
     title = first_text(posting.get("title"), posting.get("name"))
     company = first_text(structured_name(posting.get("hiringOrganization")))
     location = job_posting_location(posting)
+    compensation = job_posting_compensation(posting)
     description = html_to_text(first_text(posting.get("description")))[:12000]
     parts = [
         "Structured JobPosting data:",
         f"Job title: {title}" if title else "",
         f"Company: {company}" if company else "",
         f"Location: {location}" if location else "",
+        f"Compensation: {compensation}" if compensation else "",
         description,
     ]
     return "\n".join(part for part in parts if part).strip()
@@ -411,6 +413,53 @@ def job_posting_location(posting):
         values.extend(location_values(requirement))
 
     return " - ".join(unique_values(values))
+
+
+def job_posting_compensation(posting):
+    values = []
+    for salary in as_list(posting.get("baseSalary")):
+        values.extend(salary_values(salary))
+    return "; ".join(unique_values(values))
+
+
+def salary_values(value):
+    if isinstance(value, str):
+        return [normalize_line(value)]
+    if not isinstance(value, dict):
+        return []
+
+    currency = first_text(value.get("currency")) or first_text(value.get("salaryCurrency"))
+    amount = value.get("value", value)
+    if isinstance(amount, dict):
+        min_value = first_text(str(amount.get("minValue"))) if amount.get("minValue") is not None else ""
+        max_value = first_text(str(amount.get("maxValue"))) if amount.get("maxValue") is not None else ""
+        single_value = first_text(str(amount.get("value"))) if amount.get("value") is not None else ""
+        unit = first_text(amount.get("unitText")) or first_text(amount.get("unit"))
+    else:
+        min_value = ""
+        max_value = ""
+        single_value = first_text(str(amount)) if amount is not None else ""
+        unit = ""
+
+    if min_value and max_value:
+        label = f"{currency} {format_pay_number(min_value)} - {format_pay_number(max_value)}".strip()
+    elif single_value:
+        label = f"{currency} {format_pay_number(single_value)}".strip()
+    else:
+        return []
+
+    if unit:
+        label = f"{label} per {unit.lower()}"
+    return [normalize_line(label)]
+
+
+def format_pay_number(value):
+    text = normalize_line(str(value or ""))
+    try:
+        number = float(text.replace(",", ""))
+    except ValueError:
+        return text
+    return f"{number:,.0f}" if number.is_integer() else f"{number:,.2f}"
 
 
 def location_values(value):
@@ -479,6 +528,8 @@ def extract_with_ai(url, page_text):
         "Return empty strings for unknown text fields. "
         "Set status to Applied, heardBack to false, and priority to Medium unless the posting suggests otherwise. "
         "Prefer explicit labeled fields and structured JobPosting data when reading company and location. "
+        "For compensation, extract explicit salary, hourly, pay range, base pay, OTE, stipend, or baseSalary data. "
+        "Keep the pay period when available, such as per year or per hour. Do not invent compensation. "
         "Company means the actual hiring employer, not the job board, applicant tracking system, staffing vendor, "
         "or a company only mentioned in the description unless that company is clearly the employer. "
         "Location means the work location in the job header or JobPosting data. Do not use footer addresses, "
@@ -627,8 +678,52 @@ def infer_location(lines, text):
 
 
 def infer_compensation(text):
-    salary = re.search(r"\$[\d,]{2,}(?:\s?[kK])?\s?(?:-|to|\u2013|\u2014)\s?\$?[\d,]{2,}(?:\s?[kK])?(?:\s?(?:\/|per)\s?(?:year|yr|hour|hr))?", text, re.I)
-    return normalize_line(salary.group(0)) if salary else ""
+    lines = [normalize_line(line) for line in text.splitlines()]
+    lines = [line for line in lines if line]
+    labeled = find_labeled(
+        lines,
+        [
+            "salary",
+            "salary range",
+            "compensation",
+            "compensation range",
+            "pay",
+            "pay range",
+            "base pay",
+            "base salary",
+            "hourly pay",
+            "wage",
+            "expected salary",
+            "ote",
+        ],
+    )
+    if labeled and has_pay_signal(labeled):
+        return normalize_compensation(labeled)
+
+    context_patterns = [
+        r"(?:salary|compensation|pay range|base pay|base salary|hourly pay|wage|expected salary|ote)[^\n:]{0,35}[:\-]?\s*([^\n]{1,140})",
+        r"(?:\bUSD\b|\$)\s*[\d,.]+(?:\s?[kK])?\s*(?:-|to|\u2013|\u2014)\s*(?:\bUSD\b|\$)?\s*[\d,.]+(?:\s?[kK])?(?:\s*(?:\/|per)\s*(?:year|yr|hour|hr|annum|month|mo))?",
+        r"(?:\bUSD\b|\$)\s*[\d,.]+(?:\s?[kK])?(?:\s*(?:\/|per)\s*(?:year|yr|hour|hr|annum|month|mo))",
+    ]
+    for pattern in context_patterns:
+        match = re.search(pattern, text, re.I)
+        if match:
+            candidate = match.group(1) if match.lastindex else match.group(0)
+            if has_pay_signal(candidate):
+                return normalize_compensation(candidate)
+    return ""
+
+
+def has_pay_signal(value):
+    return bool(re.search(r"(?:\$|\bUSD\b|\bCAD\b|\bGBP\b|\bEUR\b|\d+\s?[kK]\b|\bper\s+(?:year|yr|hour|hr|month|mo)\b|/\s*(?:year|yr|hour|hr|month|mo)\b)", value or "", re.I))
+
+
+def normalize_compensation(value):
+    cleaned = normalize_line(value)
+    cleaned = re.sub(r"\s+", " ", cleaned)
+    cleaned = re.sub(r"\s*(?:\||•)\s*.*$", "", cleaned)
+    cleaned = re.sub(r"^(?:range|is|from)\s+", "", cleaned, flags=re.I)
+    return cleaned[:120].strip(" .;,")
 
 
 def infer_source(url):

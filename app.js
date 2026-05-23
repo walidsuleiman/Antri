@@ -1024,17 +1024,54 @@ function inferSource(text, url) {
 }
 
 function extractCompensation(text) {
+  const lines = text
+    .split("\n")
+    .map((line) => normalizeLine(line))
+    .filter(Boolean);
+  const labeled = matchLabeledValue(lines, [
+    "salary",
+    "salary range",
+    "compensation",
+    "compensation range",
+    "pay",
+    "pay range",
+    "base pay",
+    "base salary",
+    "hourly pay",
+    "wage",
+    "expected salary",
+    "ote"
+  ]);
+  if (labeled && hasPaySignal(labeled)) {
+    return cleanCompensation(labeled);
+  }
+
   const salaryPatterns = [
-    /\$[\d,]{2,}(?:\s?[kK])?\s?(?:-|to|\u2013|\u2014)\s?\$?[\d,]{2,}(?:\s?[kK])?(?:\s?(?:\/|per)\s?(?:year|yr|hour|hr))?/i,
-    /\$[\d,]{2,}(?:\s?[kK])?(?:\s?(?:\/|per)\s?(?:year|yr|hour|hr))?/i,
-    /(?:salary|compensation|pay range|base pay)[:\s]+([^\n]{6,80})/i
+    /(?:salary|compensation|pay range|base pay|base salary|hourly pay|wage|expected salary|ote)[^\n:]{0,35}[:\-]?\s*([^\n]{1,140})/i,
+    /(?:\bUSD\b|\$)\s*[\d,.]+(?:\s?[kK])?\s*(?:-|to|\u2013|\u2014)\s*(?:\bUSD\b|\$)?\s*[\d,.]+(?:\s?[kK])?(?:\s*(?:\/|per)\s*(?:year|yr|hour|hr|annum|month|mo))?/i,
+    /(?:\bUSD\b|\$)\s*[\d,.]+(?:\s?[kK])?(?:\s*(?:\/|per)\s*(?:year|yr|hour|hr|annum|month|mo))/i
   ];
 
   for (const pattern of salaryPatterns) {
     const match = text.match(pattern);
-    if (match) return cleanExtractedValue(match[1] || match[0]);
+    const candidate = match?.[1] || match?.[0] || "";
+    if (candidate && hasPaySignal(candidate)) {
+      return cleanCompensation(candidate);
+    }
   }
   return "";
+}
+
+function hasPaySignal(value) {
+  return /(?:\$|\bUSD\b|\bCAD\b|\bGBP\b|\bEUR\b|\d+\s?k\b|\bper\s+(?:year|yr|hour|hr|month|mo)\b|\/\s*(?:year|yr|hour|hr|month|mo)\b)/i.test(value || "");
+}
+
+function cleanCompensation(value) {
+  return cleanExtractedValue(value)
+    .replace(/\s*(?:\||•)\s*.*$/, "")
+    .replace(/^(?:range|is|from)\s+/i, "")
+    .slice(0, 120)
+    .trim();
 }
 
 function extractLocation(lines, text) {
