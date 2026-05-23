@@ -4,6 +4,7 @@ const STORAGE_KEY = "antri.applications.v1";
 const USER_STORAGE_PREFIX = `${STORAGE_KEY}.user`;
 const LEGACY_STORAGE_KEY = "jobflow.applications.v1";
 const CLOUD_MIGRATION_PREFIX = `${STORAGE_KEY}.cloud-migrated`;
+const PENDING_DRAFT_KEY = `${STORAGE_KEY}.pending-draft`;
 const CLOUD_TABLE = "job_applications";
 const CLOUD_COLUMNS = [
   "id",
@@ -143,6 +144,7 @@ async function init() {
   populateStatusOptions();
   bindEvents();
   setAuthMode("login");
+  rememberDraftFromUrl();
   await initializeAuth();
 }
 
@@ -265,6 +267,9 @@ function showSignedOutApp() {
   elements.drawer.setAttribute("aria-hidden", "true");
   elements.drawer.inert = true;
   elements.drawerBackdrop.hidden = true;
+  if (pendingDraftExists()) {
+    setAuthStatus("Log in to review the job draft from your browser extension.");
+  }
 }
 
 function setAuthMode(mode) {
@@ -938,13 +943,30 @@ function setSmartLoading(isLoading, message = "") {
   }
 }
 
-function openDraftFromUrl() {
+function rememberDraftFromUrl() {
   const params = new URLSearchParams(window.location.search);
   const encodedDraft = params.get("draft");
   if (!encodedDraft) return;
 
   try {
+    JSON.parse(decodeDraftValue(encodedDraft));
+    sessionStorage.setItem(PENDING_DRAFT_KEY, encodedDraft);
+  } catch {
+    sessionStorage.removeItem(PENDING_DRAFT_KEY);
+  }
+
+  params.delete("draft");
+  const query = params.toString();
+  window.history.replaceState({}, document.title, `${window.location.pathname}${query ? `?${query}` : ""}`);
+}
+
+function openDraftFromUrl() {
+  const encodedDraft = sessionStorage.getItem(PENDING_DRAFT_KEY);
+  if (!encodedDraft) return;
+
+  try {
     const draft = JSON.parse(decodeDraftValue(encodedDraft));
+    sessionStorage.removeItem(PENDING_DRAFT_KEY);
     openDrawer();
     if (draft.url) {
       elements.smartUrlInput.value = draft.url;
@@ -954,11 +976,14 @@ function openDraftFromUrl() {
       ? `Extension drafted ${filledCount} fields. Review before saving.`
       : "Extension opened an empty draft. Review before saving.";
   } catch {
+    sessionStorage.removeItem(PENDING_DRAFT_KEY);
     openDrawer();
     elements.smartResult.textContent = "The extension draft could not be read.";
-  } finally {
-    window.history.replaceState({}, document.title, window.location.pathname);
   }
+}
+
+function pendingDraftExists() {
+  return Boolean(sessionStorage.getItem(PENDING_DRAFT_KEY));
 }
 
 function decodeDraftValue(value) {
