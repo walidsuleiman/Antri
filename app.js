@@ -1161,7 +1161,7 @@ function extractCompany(lines, text, url) {
 
 function extractRole(lines, company, location) {
   const labeled = matchLabeledValue(lines, ["job title", "title", "role", "position"]);
-  if (labeled) return labeled;
+  if (labeled) return cleanRoleTitle(labeled);
 
   const roleLine = lines.find((line, index) => {
     if (index > 8) return false;
@@ -1169,7 +1169,7 @@ function extractRole(lines, company, location) {
     return looksLikeRole(line);
   });
 
-  if (roleLine) return roleLine;
+  if (roleLine) return cleanRoleTitle(roleLine);
 
   const firstUsefulLine = lines.find((line) => {
     const lower = line.toLowerCase();
@@ -1181,7 +1181,24 @@ function extractRole(lines, company, location) {
       && !lower.includes("about us");
   });
 
-  return firstUsefulLine || "";
+  return firstUsefulLine ? cleanRoleTitle(firstUsefulLine) : "";
+}
+
+function cleanRoleTitle(value) {
+  let title = cleanExtractedValue(value)
+    .replace(/\s+/g, " ")
+    .replace(/\s+(?:to join|will join|reports? to|is responsible for|you will|you'll|we are|we're|this is)\b.*$/i, "")
+    .replace(/\s*[,.;:]\s*(?:this is|you will|you'll|we are|we're|reporting|responsible)\b.*$/i, "")
+    .replace(/\s+\bat\s+[A-Z][A-Za-z0-9&.,' -]{2,70}$/i, "");
+
+  if (title.length > 72) {
+    const sentenceBreak = title.search(/[.;:]/);
+    if (sentenceBreak > 8) {
+      title = title.slice(0, sentenceBreak);
+    }
+  }
+
+  return title.slice(0, 90).trim(" -|,.;:");
 }
 
 function matchLabeledValue(lines, labels) {
@@ -1204,6 +1221,11 @@ function matchLabeledValue(lines, labels) {
 }
 
 function looksLikeRole(line) {
+  const cleaned = cleanRoleTitle(line);
+  if (!cleaned || cleaned.length > 72 || cleaned.split(/\s+/).length > 9) {
+    return false;
+  }
+
   const lower = line.toLowerCase();
   const roleWords = [
     "engineer",
@@ -1228,7 +1250,7 @@ function looksLikeRole(line) {
     "operations",
     "success"
   ];
-  return line.length <= 82 && roleWords.some((word) => lower.includes(word));
+  return roleWords.some((word) => lower.includes(word));
 }
 
 function looksLikeLocation(line) {

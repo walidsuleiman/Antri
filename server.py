@@ -602,7 +602,10 @@ def find_response_text(data):
 def extract_with_heuristics(url, text):
     lines = [normalize_line(line) for line in text.splitlines()]
     lines = [line for line in lines if line]
-    role = find_labeled(lines, ["job title", "title", "role", "position"]) or next((line for line in lines[:12] if looks_like_role(line)), "")
+    role = clean_role_title(
+        find_labeled(lines, ["job title", "title", "role", "position"])
+        or next((line for line in lines[:12] if looks_like_role(line)), "")
+    )
     company = (
         find_labeled(lines, ["company", "company name", "employer", "hiring organization", "organization"])
         or find_job_id_company(lines)
@@ -838,13 +841,29 @@ def looks_like_location_line(line):
 
 
 def looks_like_role(line):
+    cleaned = clean_role_title(line)
+    if not cleaned or len(cleaned) > 72 or len(cleaned.split()) > 9:
+        return False
+
     words = (
         "engineer developer designer manager analyst associate specialist coordinator director "
         "lead intern consultant administrator representative scientist architect product marketing "
         "sales operations success"
     ).split()
     lower = line.lower()
-    return len(line) <= 90 and any(word in lower for word in words)
+    return any(word in lower for word in words)
+
+
+def clean_role_title(value):
+    title = normalize_line(value)
+    title = re.sub(r"\s+(?:to join|will join|reports? to|is responsible for|you will|you'll|we are|we're|this is)\b.*$", "", title, flags=re.I)
+    title = re.sub(r"\s*[,.;:]\s*(?:this is|you will|you'll|we are|we're|reporting|responsible)\b.*$", "", title, flags=re.I)
+    title = re.sub(r"\s+\bat\s+[A-Z][A-Za-z0-9&.,' -]{2,70}$", "", title, flags=re.I)
+    if len(title) > 72:
+        match = re.search(r"[.;:]", title)
+        if match and match.start() > 8:
+            title = title[:match.start()]
+    return title[:90].strip(" -|,.;:")
 
 
 if __name__ == "__main__":
