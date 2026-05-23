@@ -13,6 +13,8 @@ import sys
 HOST = os.environ.get("HOST", "0.0.0.0")
 PORT = int(os.environ.get("PORT", "4173"))
 MODEL = os.environ.get("ANTRI_OPENAI_MODEL", "gpt-4o-mini")
+CANONICAL_HOST = os.environ.get("ANTRI_CANONICAL_HOST", "antri.xyz")
+RENDER_HOST = "antri.onrender.com"
 
 
 JOB_SCHEMA = {
@@ -90,6 +92,11 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Cache-Control", "no-store")
         super().end_headers()
 
+    def do_GET(self):
+        if self.redirect_to_canonical_host():
+            return
+        super().do_GET()
+
     def do_POST(self):
         if self.path not in {"/api/extract-job", "/api/extract-page"}:
             self.send_json({"error": "Not found"}, 404)
@@ -154,6 +161,16 @@ class Handler(SimpleHTTPRequestHandler):
         length = int(self.headers.get("Content-Length", "0"))
         data = self.rfile.read(length).decode("utf-8")
         return json.loads(data or "{}")
+
+    def redirect_to_canonical_host(self):
+        host = (self.headers.get("Host") or "").split(":")[0].lower()
+        if host != RENDER_HOST or not CANONICAL_HOST:
+            return False
+
+        self.send_response(308)
+        self.send_header("Location", f"https://{CANONICAL_HOST}{self.path}")
+        self.end_headers()
+        return True
 
     def send_json(self, payload, status=200):
         body = json.dumps(payload).encode("utf-8")

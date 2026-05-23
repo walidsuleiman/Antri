@@ -32,12 +32,6 @@ Use:
 https://antri.xyz/privacy.html
 ```
 
-Until the custom domain resolves, use:
-
-```text
-https://antri.onrender.com/privacy.html
-```
-
 ## Single Purpose
 
 Create an Antri job application draft from the job posting the user is actively viewing and chooses to save.
@@ -58,7 +52,7 @@ Needed to identify the active tab and open the resulting draft in Antri.
 
 ### Host permissions
 
-`https://antri.xyz/*` and `https://antri.onrender.com/*` are needed to send the selected job-posting data to Antri's extraction endpoint and open the resulting draft in the Antri web app.
+`https://antri.xyz/*` is needed to send the selected job-posting data to Antri's extraction endpoint and open the resulting draft in the Antri web app.
 
 ## Data Disclosure Notes
 

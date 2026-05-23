@@ -1,6 +1,5 @@
 const ANTRI_ORIGINS = [
-  "https://antri.xyz",
-  "https://antri.onrender.com"
+  "https://antri.xyz"
 ];
 
 const saveButton = document.getElementById("saveButton");

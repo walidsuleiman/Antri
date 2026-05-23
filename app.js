@@ -391,7 +391,10 @@ function closeAccountMenu() {
 }
 
 function authRedirectUrl() {
-  return `${window.location.origin}${window.location.pathname}`;
+  const origin = window.location.hostname === "antri.onrender.com"
+    ? "https://antri.xyz"
+    : window.location.origin;
+  return `${origin}${window.location.pathname}`;
 }
 
 async function loadCloudJobs() {

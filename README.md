@@ -147,7 +147,7 @@ If Antri finds older browser-saved cards and the signed-in account has no cloud 
 
 ## Load The Chrome Extension
 
-1. Keep Antri available at `https://antri.xyz` or `https://antri.onrender.com`.
+1. Keep Antri available at `https://antri.xyz`.
 2. For local extension testing, edit the extension URLs in `extension/popup.js` back to the local backend.
 3. Open `chrome://extensions` in Chrome.
 4. Turn on **Developer mode**.
