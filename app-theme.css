@@ -273,6 +273,14 @@ textarea:focus-visible {
   box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.16);
 }
 
+/* native dropdown list — force a solid dark popup so options stay legible
+   (the select's translucent-white background bleeds into the option list) */
+select option,
+select optgroup {
+  background-color: #11141d;
+  color: #f4f7fb;
+}
+
 /* --------------------------------------------------------- section heads + job meta */
 .section-head h2 { letter-spacing: -0.02em; }
 .job-card { gap: 14px; padding: 20px; }
