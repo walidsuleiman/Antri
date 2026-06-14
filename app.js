@@ -42,6 +42,8 @@ let currentUser = null;
 let currentSession = null;
 let authClient = null;
 let authMode = "login";
+let isPro = false;
+const FREE_APP_CAP = 50;
 
 const elements = {
   authGate: document.getElementById("authGate"),
@@ -98,6 +100,18 @@ const elements = {
   extractUrlButton: document.getElementById("extractUrlButton"),
   clearSmartButton: document.getElementById("clearSmartButton"),
   smartResult: document.getElementById("smartResult"),
+  smartAdd: document.getElementById("smartAdd"),
+  smartLock: document.getElementById("smartLock"),
+  smartLockUpgrade: document.getElementById("smartLockUpgrade"),
+  planPill: document.getElementById("planPill"),
+  accountPlan: document.getElementById("accountPlan"),
+  planActionButton: document.getElementById("planActionButton"),
+  upgradeBackdrop: document.getElementById("upgradeBackdrop"),
+  upgradeModal: document.getElementById("upgradeModal"),
+  upgradeClose: document.getElementById("upgradeClose"),
+  upgradeReason: document.getElementById("upgradeReason"),
+  upgradeCheckout: document.getElementById("upgradeCheckout"),
+  upgradeStatus: document.getElementById("upgradeStatus"),
   template: document.getElementById("jobCardTemplate")
 };
 
@@ -185,6 +199,21 @@ function bindEvents() {
   elements.extractUrlButton.addEventListener("click", extractSmartUrl);
   elements.clearSmartButton.addEventListener("click", clearSmartAdd);
 
+  elements.smartLockUpgrade.addEventListener("click", () => openUpgradeModal("smartadd"));
+  elements.planActionButton.addEventListener("click", () => {
+    if (isPro) {
+      manageSubscription();
+    } else {
+      openUpgradeModal("plan");
+    }
+  });
+  elements.planPill.addEventListener("click", () => {
+    if (!isPro) openUpgradeModal("plan");
+  });
+  elements.upgradeClose.addEventListener("click", closeUpgradeModal);
+  elements.upgradeBackdrop.addEventListener("click", closeUpgradeModal);
+  elements.upgradeCheckout.addEventListener("click", startCheckout);
+
   document.addEventListener("click", (event) => {
     if (!elements.accountMenu.contains(event.target)) {
       closeAccountMenu();
@@ -194,6 +223,9 @@ function bindEvents() {
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
       closeAccountMenu();
+      if (!elements.upgradeModal.hidden) {
+        closeUpgradeModal();
+      }
       if (elements.drawer.classList.contains("open")) {
         closeDrawer();
       }
@@ -245,6 +277,7 @@ async function handleAuthSession(session) {
   try {
     jobs = await loadCloudJobs();
     jobs = await migrateLocalJobsToCloud(jobs);
+    await loadSubscription();
     render();
     setSyncStatus(`Cloud synced. ${jobs.length} ${jobs.length === 1 ? "application" : "applications"} loaded.`, "success");
     openDraftFromUrl();
@@ -257,6 +290,7 @@ async function handleAuthSession(session) {
 function showSignedOutApp() {
   currentSession = null;
   currentUser = null;
+  isPro = false;
   jobs = [];
   elements.authGate.hidden = false;
   elements.appShell.hidden = true;
@@ -492,6 +526,134 @@ async function getActiveSession() {
   return currentSession;
 }
 
+// --------------------------------------------------------------------------
+// Subscription / paywall (Free: 50 applications; Pro: unlimited + Smart Add)
+// --------------------------------------------------------------------------
+async function loadSubscription() {
+  isPro = false;
+  try {
+    const rows = await cloudRequest("subscriptions?select=status,current_period_end&limit=1");
+    const sub = Array.isArray(rows) ? rows[0] : null;
+    if (sub && (sub.status === "active" || sub.status === "trialing")) {
+      isPro = !sub.current_period_end || new Date(sub.current_period_end) > new Date();
+    }
+  } catch (error) {
+    // No subscriptions table yet, or a transient error: treat as Free and keep
+    // the app working rather than blocking on the paywall layer.
+    isPro = false;
+  }
+}
+
+function updatePlanUI() {
+  const pill = elements.planPill;
+  const planLine = elements.accountPlan;
+  const action = elements.planActionButton;
+  if (!pill || !action) return;
+
+  if (isPro) {
+    pill.hidden = false;
+    pill.dataset.plan = "pro";
+    pill.textContent = "Pro";
+    pill.title = "Antri Pro — unlimited applications";
+    if (planLine) {
+      planLine.innerHTML = '<span class="plan-tag pro">Antri Pro</span><span>Unlimited applications</span>';
+    }
+    action.hidden = false;
+    action.textContent = "Manage subscription";
+  } else {
+    const remaining = Math.max(0, FREE_APP_CAP - jobs.length);
+    pill.hidden = false;
+    pill.dataset.plan = jobs.length >= FREE_APP_CAP ? "full" : "free";
+    pill.textContent = `${jobs.length} / ${FREE_APP_CAP}`;
+    pill.title = `Free plan — ${remaining} application${remaining === 1 ? "" : "s"} left. Upgrade for unlimited.`;
+    if (planLine) {
+      planLine.innerHTML = `<span class="plan-tag">Free plan</span><span>${jobs.length} / ${FREE_APP_CAP} applications</span>`;
+    }
+    action.hidden = false;
+    action.textContent = "Upgrade to Pro";
+  }
+}
+
+function applySmartLock() {
+  const locked = !isPro;
+  if (elements.smartLock) elements.smartLock.hidden = !locked;
+  if (elements.smartAdd) elements.smartAdd.classList.toggle("is-locked", locked);
+  [
+    elements.smartUrlInput, elements.smartTextInput, elements.extractTextButton,
+    elements.extractUrlButton, elements.clearSmartButton
+  ].forEach((el) => { if (el) el.disabled = locked; });
+}
+
+const UPGRADE_COPY = {
+  cap: "You've reached the free plan's 50-application limit. Upgrade to Pro for unlimited tracking.",
+  smartadd: "Smart Add turns any job link into a filled draft. It's part of Antri Pro.",
+  extension: "The browser saver extension is part of Antri Pro.",
+  plan: "Go unlimited and unlock automation with Antri Pro."
+};
+
+function openUpgradeModal(reason = "plan") {
+  elements.upgradeReason.textContent = UPGRADE_COPY[reason] || UPGRADE_COPY.plan;
+  elements.upgradeStatus.textContent = "";
+  elements.upgradeCheckout.disabled = false;
+  closeAccountMenu();
+  elements.upgradeBackdrop.hidden = false;
+  elements.upgradeModal.hidden = false;
+  elements.upgradeModal.setAttribute("aria-hidden", "false");
+  elements.upgradeCheckout.focus();
+}
+
+function closeUpgradeModal() {
+  elements.upgradeBackdrop.hidden = true;
+  elements.upgradeModal.hidden = true;
+  elements.upgradeModal.setAttribute("aria-hidden", "true");
+}
+
+async function startCheckout() {
+  elements.upgradeStatus.textContent = "Opening secure checkout…";
+  elements.upgradeCheckout.disabled = true;
+  try {
+    const session = await getActiveSession();
+    const response = await fetch("/api/create-checkout-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({})
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.url) {
+      throw new Error(payload.error || "Checkout isn't available yet. Please try again soon.");
+    }
+    window.location.assign(payload.url);
+  } catch (error) {
+    elements.upgradeStatus.textContent = error.message;
+    elements.upgradeCheckout.disabled = false;
+  }
+}
+
+async function manageSubscription() {
+  closeAccountMenu();
+  try {
+    const session = await getActiveSession();
+    const response = await fetch("/api/portal-session", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({})
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.url) {
+      throw new Error(payload.error || "The billing portal isn't available yet.");
+    }
+    window.location.assign(payload.url);
+  } catch (error) {
+    setSyncStatus(error.message, "error");
+  }
+}
+
 function jobToCloudRow(job) {
   const normalized = normalizeJob(job);
   return {
@@ -575,6 +737,7 @@ function switchView(viewName) {
 
 function render() {
   renderMetrics();
+  updatePlanUI();
   renderSourceFilters();
   renderJobs();
   renderFollowups();
@@ -759,8 +922,16 @@ function renderBarChart(container, counts, order) {
 }
 
 function openDrawer(job = null) {
+  // Free tier is capped at FREE_APP_CAP applications. Editing existing rows is
+  // always allowed; only adding a new one past the cap is blocked.
+  if (!job && !isPro && jobs.length >= FREE_APP_CAP) {
+    openUpgradeModal("cap");
+    return;
+  }
+
   elements.form.reset();
   clearSmartAdd();
+  applySmartLock();
   fields.dateApplied.valueAsDate = new Date();
   fields.priority.value = "Medium";
   fields.status.value = "Applied";

@@ -149,6 +149,7 @@
               <span aria-hidden="true">+</span>
               Add job
             </button>
+            <button class="plan-pill" id="planPill" type="button" hidden></button>
             <div class="account-menu" id="accountMenu">
               <button
                 class="account-trigger"
@@ -167,6 +168,8 @@
                   <span>Signed in as</span>
                   <strong id="accountEmail"></strong>
                 </div>
+                <div class="account-plan" id="accountPlan"></div>
+                <button class="account-action plan-action" type="button" id="planActionButton" role="menuitem" hidden></button>
                 <a class="account-action" href="privacy.html" role="menuitem">Privacy policy</a>
                 <button class="account-action" type="button" id="signOutButton" role="menuitem">Sign out</button>
               </div>
@@ -327,7 +330,7 @@
 
         <input type="hidden" id="jobId">
 
-        <section class="smart-add" aria-label="Smart add">
+        <section class="smart-add" id="smartAdd" aria-label="Smart add">
           <div class="smart-add-head">
             <div>
               <p class="smart-kicker">Smart Add</p>
@@ -348,6 +351,17 @@
             <button class="ghost-button" type="button" id="extractTextButton">Extract from text</button>
             <button class="ghost-button" type="button" id="clearSmartButton">Clear</button>
             <button class="primary-button" type="button" id="extractUrlButton">Extract from link</button>
+          </div>
+          <div class="smart-lock" id="smartLock" hidden>
+            <div class="smart-lock-inner">
+              <span class="lock-badge">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                Pro feature
+              </span>
+              <strong>Turn any job link into a filled draft</strong>
+              <p>Smart Add and the browser extension are part of Antri Pro.</p>
+              <button class="primary-button" type="button" id="smartLockUpgrade">Upgrade to Pro</button>
+            </div>
           </div>
         </section>
 
@@ -423,6 +437,26 @@
         </div>
       </form>
     </aside>
+
+    <div id="upgradeBackdrop" class="upgrade-backdrop" hidden></div>
+    <div id="upgradeModal" class="upgrade-modal" role="dialog" aria-modal="true" aria-labelledby="upgradeTitle" aria-hidden="true" hidden>
+      <button class="upgrade-close" type="button" id="upgradeClose" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <span class="eyebrow">Antri Pro</span>
+      <h2 id="upgradeTitle">Unlock unlimited tracking</h2>
+      <p id="upgradeReason" class="upgrade-reason">Go beyond the free plan with automation and unlimited applications.</p>
+      <div class="upgrade-price"><span class="amt">$9.99</span><span class="per">/ month</span></div>
+      <ul class="upgrade-feats">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Unlimited applications (Free is capped at 50)</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Smart Add — paste a link, get a filled draft</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> The browser extension</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg> Cancel anytime</li>
+      </ul>
+      <button class="primary-button" type="button" id="upgradeCheckout">Upgrade to Pro</button>
+      <output id="upgradeStatus" class="upgrade-status" aria-live="polite"></output>
+      <p class="upgrade-fine">Secure checkout and billing handled by Stripe.</p>
+    </div>
 
     <template id="jobCardTemplate">
       <article class="job-card">
