@@ -1,0 +1,292 @@
+/* ==========================================================================
+   Antri — premium dark login / auth gate
+   Loaded AFTER styles.css. Everything is scoped to #authGate so the signed-in
+   app workspace is left untouched. Always dark, matching the marketing site.
+   ========================================================================== */
+
+#authGate.auth-shell {
+  position: relative;
+  padding: 40px 32px;
+  background:
+    radial-gradient(1100px 620px at 50% -220px, #0a0d18, transparent 72%),
+    radial-gradient(820px 520px at 100% 0%, rgba(37, 99, 235, 0.12), transparent 60%),
+    radial-gradient(820px 520px at 0% 30%, rgba(96, 165, 250, 0.07), transparent 55%),
+    #05060a;
+  color: #f4f7fb;
+  overflow: hidden;
+}
+
+/* ambient dot-field canvas (auth-visual.js) */
+#authCanvas {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#authGate .auth-layout {
+  position: relative;
+  z-index: 2;
+  grid-template-columns: minmax(360px, 470px) minmax(380px, 580px);
+  gap: clamp(28px, 5vw, 64px);
+}
+
+/* --------------------------------------------------------- panel (left) */
+#authGate .auth-panel {
+  gap: 18px;
+  padding: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018));
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6);
+}
+
+#authGate .auth-brand { gap: 11px; }
+#authGate .auth-brand strong { font-size: 1.12rem; letter-spacing: -0.02em; color: #f4f7fb; }
+#authGate .auth-mark {
+  width: 38px; height: 38px;
+  border: 0;
+  border-radius: 11px;
+  filter: drop-shadow(0 0 12px rgba(96, 165, 250, 0.45));
+}
+
+#authGate .auth-copy { gap: 14px; }
+#authGate .auth-copy .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: #60a5fa;
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+}
+#authGate .auth-copy .eyebrow::before {
+  content: "";
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #60a5fa;
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.65);
+}
+#authGate .auth-copy h1 {
+  max-width: 15ch;
+  font-size: clamp(2rem, 3.4vw, 2.85rem);
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  background: linear-gradient(180deg, #ffffff 25%, #9ec5ff 135%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+#authGate .auth-copy p:last-child {
+  max-width: 42ch;
+  color: #8c95a6;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+/* --------------------------------------------------------- oauth / divider */
+#authGate .oauth-button {
+  min-height: 50px;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.045);
+  color: #f4f7fb;
+  font-weight: 560;
+  text-align: center;
+  transition: background 0.2s, border-color 0.2s, transform 0.2s;
+}
+#authGate .oauth-button:hover {
+  background: rgba(255, 255, 255, 0.085);
+  border-color: rgba(255, 255, 255, 0.22);
+  transform: translateY(-1px);
+}
+#authGate .oauth-button span {
+  width: 22px; height: 22px;
+  background: transparent;
+}
+
+#authGate .auth-divider {
+  color: #69707e;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+}
+#authGate .auth-divider::before,
+#authGate .auth-divider::after {
+  border-top-color: rgba(255, 255, 255, 0.09);
+}
+
+/* --------------------------------------------------------- mode toggle */
+#authGate .auth-mode {
+  padding: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.25);
+}
+#authGate .auth-mode button {
+  min-height: 40px;
+  border-radius: 8px;
+  color: #8c95a6;
+  font-weight: 560;
+  transition: color 0.2s, background 0.2s;
+}
+#authGate .auth-mode button.active {
+  background: rgba(255, 255, 255, 0.085);
+  color: #f4f7fb;
+  box-shadow: 0 1px 10px rgba(0, 0, 0, 0.3);
+}
+
+/* --------------------------------------------------------- form */
+#authGate .auth-form label { color: #c4ccd8; font-weight: 540; font-size: 0.86rem; }
+#authGate .auth-form input {
+  min-height: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #f4f7fb;
+  font-weight: 500;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+#authGate .auth-form input::placeholder { color: #69707e; }
+#authGate .auth-form input:focus-visible {
+  outline: none;
+  border-color: rgba(96, 165, 250, 0.6);
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.18);
+}
+
+/* primary submit -> glowing gradient */
+#authGate .auth-submit,
+#authGate .auth-submit:hover {
+  min-height: 50px;
+  margin-top: 4px;
+  border: 0;
+  border-radius: 12px;
+  color: #04060c;
+  font-weight: 600;
+  background: linear-gradient(180deg, #8cc0ff, #3b82f6);
+}
+#authGate .auth-submit {
+  box-shadow: 0 8px 30px rgba(37, 99, 235, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: transform 0.2s, box-shadow 0.25s;
+}
+#authGate .auth-submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 44px rgba(37, 99, 235, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* --------------------------------------------------------- status / privacy */
+#authGate .auth-status {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: #c4ccd8;
+}
+#authGate .auth-privacy-link { color: #8c95a6; font-weight: 540; }
+#authGate .auth-privacy-link:hover { color: #60a5fa; }
+
+/* --------------------------------------------------------- preview (right) */
+#authGate .auth-preview {
+  min-height: 560px;
+  padding: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 22px;
+  background:
+    radial-gradient(120% 70% at 50% -10%, rgba(96, 165, 250, 0.14), transparent 60%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.5), 0 0 70px rgba(37, 99, 235, 0.12);
+}
+#authGate .auth-noise span {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: rgba(255, 255, 255, 0.03);
+  color: #8c95a6;
+  font-weight: 600;
+}
+#authGate .auth-preview-head .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #60a5fa;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  font-size: 0.76rem;
+}
+#authGate .auth-preview-head .eyebrow::before {
+  content: "";
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #60a5fa;
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.65);
+}
+#authGate .auth-preview-head strong {
+  font-size: clamp(1.55rem, 2.4vw, 2rem);
+  font-weight: 640;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+  background: linear-gradient(180deg, #ffffff, #9ec5ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+#authGate .auth-preview-board {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.28);
+  box-shadow: none;
+}
+#authGate .preview-job {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+#authGate .preview-job.active {
+  border-color: rgba(96, 165, 250, 0.35);
+  background: rgba(96, 165, 250, 0.1);
+}
+#authGate .preview-job strong { color: #f4f7fb; }
+#authGate .preview-job span { color: #8c95a6; font-weight: 500; }
+#authGate .preview-job em {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #c4ccd8;
+  font-weight: 560;
+}
+#authGate .preview-job.active em {
+  border-color: rgba(96, 165, 250, 0.35);
+  background: rgba(96, 165, 250, 0.12);
+  color: #60a5fa;
+}
+#authGate .auth-preview-metrics span {
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+  color: #8c95a6;
+  font-weight: 500;
+}
+#authGate .auth-preview-metrics strong { color: #f4f7fb; }
+
+/* --------------------------------------------------------- responsive */
+@media (max-width: 1040px) {
+  #authGate .auth-layout {
+    grid-template-columns: minmax(0, 480px);
+    justify-content: center;
+  }
+  #authGate .auth-preview { display: none; } /* keep the login focused on small screens */
+}
+@media (max-width: 560px) {
+  #authGate.auth-shell { padding: 22px 16px; }
+  #authGate .auth-panel { padding: 26px; }
+}
+
+/* Respect reduced motion for the canvas (auth-visual.js draws a static field) */
+@media (prefers-reduced-motion: reduce) {
+  #authGate .oauth-button,
+  #authGate .auth-submit { transition: none; }
+}

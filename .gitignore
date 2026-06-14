@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 dist/
 store-assets/chrome-screenshot-profile/
+.claude/settings.local.json
