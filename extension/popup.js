@@ -64,7 +64,7 @@ async function extractWithAvailableAntri(page) {
 }
 
 async function openAntriDraft(origin, draft) {
-  const draftUrl = `${origin}/index.html?draft=${encodeURIComponent(draft)}`;
+  const draftUrl = `${origin}/app.html?draft=${encodeURIComponent(draft)}`;
   const existingTabs = await chrome.tabs.query({ url: `${origin}/*` });
   const existingTab = existingTabs.find((tab) => tab.id && tab.windowId);
 

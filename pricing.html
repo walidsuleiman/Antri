@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Pricing — Antri</title>
+    <meta name="description" content="Antri is free and open-source to self-host or use on the cloud. Add AI automation, the cloud extension, and cross-device sync with Antri Pro for $9.99/mo.">
+    <meta name="theme-color" content="#05060a">
+    <link rel="icon" href="assets/antri-mark.svg">
+    <link rel="canonical" href="https://antri.xyz/pricing.html">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Pricing — Antri">
+    <meta property="og:description" content="Free and open-source. Add AI automation and cross-device sync for $9.99/mo.">
+    <meta property="og:url" content="https://antri.xyz/pricing.html">
+    <meta property="og:image" content="https://antri.xyz/assets/antri-mark-linkedin.png">
+    <meta name="twitter:card" content="summary_large_image">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="site.css">
+  </head>
+  <body>
+    <canvas id="bgCanvas" aria-hidden="true"></canvas>
+    <div class="bg-veil" aria-hidden="true"></div>
+    <div class="scroll-progress" aria-hidden="true"></div>
+
+    <div class="page" id="top">
+      <svg id="trailMap" class="trail-map" aria-hidden="true"></svg>
+
+      <!-- ============================ NAV ============================ -->
+      <header class="nav">
+        <div class="wrap nav-inner">
+          <a class="brand" href="index.html" aria-label="Antri home">
+            <img class="brand-mark" src="assets/antri-mark.svg" alt="">
+            <span>Antri</span>
+          </a>
+          <button class="nav-toggle" type="button" aria-label="Toggle menu" aria-expanded="false"><span></span></button>
+          <nav class="nav-links" aria-label="Primary">
+            <a class="nav-link" href="index.html#what">Product</a>
+            <a class="nav-link" href="index.html#story">Why "Antri"</a>
+            <a class="nav-link" href="index.html#features">Features</a>
+            <a class="nav-link is-active" href="pricing.html">Pricing</a>
+            <a class="nav-link" href="index.html#contact">Contact</a>
+            <a class="nav-link" href="https://github.com/walidsuleiman/Antri" target="_blank" rel="noreferrer">GitHub</a>
+            <a class="btn btn-primary nav-cta" href="app.html">Launch app</a>
+          </nav>
+        </div>
+      </header>
+
+      <!-- ========================= HERO ========================= -->
+      <section class="section hero wrap" style="padding-bottom:clamp(20px,4vw,40px)">
+        <span class="hero-badge reveal"><span class="tag">Simple</span> One free plan, one optional upgrade</span>
+        <h1 class="reveal" data-delay="1" style="font-size:clamp(2.4rem,6vw,4.4rem)">
+          Free to track.<br><span class="grad">$9.99 for the automation.</span>
+        </h1>
+        <p class="hero-sub reveal" data-delay="2">
+          The entire Antri tracker is free and open-source — self-host it or use it on the cloud.
+          Upgrade only when you want AI automation, the cloud extension, and your account synced
+          across every device.
+        </p>
+      </section>
+
+      <!-- ======================= PRICING CARDS ======================= -->
+      <section class="wrap" style="padding-bottom:clamp(40px,6vw,80px)" data-trail-stop>
+        <div class="price-grid">
+          <!-- FREE -->
+          <div class="price-card reveal">
+            <h3>Open Source</h3>
+            <p class="tagline">For anyone who wants to run Antri themselves.</p>
+            <div class="price-amount"><span class="amt">$0</span><span class="per">/ forever</span></div>
+            <p class="price-sub">No account required to self-host</p>
+            <a class="btn btn-ghost" href="app.html">Start free</a>
+            <ul class="price-features">
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Full application pipeline</li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Follow-ups, search, filters &amp; sort</li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Insights &amp; pipeline metrics</li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Smart Add from a job link</li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Import / export (JSON &amp; CSV)</li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> 100% open-source — clone &amp; self-host</li>
+              <li class="muted"><span class="x"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></span> No managed cloud sync or AI automation</li>
+            </ul>
+            <p class="price-foot">Use it free at <strong>antri.xyz</strong>, or clone the repo and host it anywhere.</p>
+          </div>
+
+          <!-- PRO -->
+          <div class="price-card featured reveal" data-delay="1">
+            <span class="price-flag">Most popular</span>
+            <h3>Antri Pro</h3>
+            <p class="tagline">For an automated, synced job search.</p>
+            <div class="price-amount"><span class="amt">$9.99</span><span class="per">/ month</span></div>
+            <p class="price-sub">Cloud storage synced to your account</p>
+            <a class="btn btn-primary" href="app.html">Get Antri Pro</a>
+            <ul class="price-features">
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> <strong>Everything in Open Source</strong></li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> AI automation for parsing &amp; tracking</li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> The cloud browser extension</li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Cloud storage saved to your account</li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Synced across every device you use</li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Nothing to host or maintain</li>
+              <li><span class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span> Priority support</li>
+            </ul>
+            <p class="price-foot">Cancel anytime. Your tracked applications are always exportable.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================== COMPARISON ====================== -->
+      <section class="section wrap" data-trail-stop>
+        <div class="section-head center reveal">
+          <span class="eyebrow center">Compare plans</span>
+          <h2 class="h2">What you get on each plan</h2>
+        </div>
+        <div class="reveal" data-delay="1" style="overflow-x:auto">
+          <table class="compare">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th class="center">Open Source</th>
+                <th class="center">Antri Pro</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td class="feat">Application pipeline &amp; records</td><td class="center"><span class="tick">●</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">Follow-ups, search, filters &amp; insights</td><td class="center"><span class="tick">●</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">Smart Add from a job link</td><td class="center"><span class="tick">●</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">Import / export (JSON &amp; CSV)</td><td class="center"><span class="tick">●</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">Self-host the full app</td><td class="center"><span class="tick">●</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">AI automation for parsing &amp; tracking</td><td class="center"><span class="dash">—</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">Cloud browser extension</td><td class="center"><span class="dash">—</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">Cloud storage saved to your account</td><td class="center"><span class="dash">—</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">Sync across all your devices</td><td class="center"><span class="dash">—</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">Managed &amp; maintained for you</td><td class="center"><span class="dash">—</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">Priority support</td><td class="center"><span class="dash">—</span></td><td class="center"><span class="tick">●</span></td></tr>
+              <tr><td class="feat">Price</td><td class="center"><strong>$0</strong></td><td class="center"><strong>$9.99/mo</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ========================= FAQ ========================= -->
+      <section class="section wrap" data-trail-stop>
+        <div class="section-head center reveal">
+          <span class="eyebrow center">FAQ</span>
+          <h2 class="h2">Questions, answered</h2>
+        </div>
+        <div class="faq">
+          <details class="faq-item reveal" open>
+            <summary>Is Antri really free?</summary>
+            <p>Yes. The full tracker is open-source and free to use forever — on the cloud at antri.xyz or self-hosted from the GitHub repo. You only pay if you want Antri Pro's AI automation, cloud extension, and cross-device sync.</p>
+          </details>
+          <details class="faq-item reveal" data-delay="1">
+            <summary>What exactly does the $9.99/mo Pro plan add?</summary>
+            <p>Pro unlocks AI automation, the cloud-synced browser extension, and cloud storage tied to your account — so your pipeline syncs automatically across every device you sign in on, with nothing for you to host or maintain.</p>
+          </details>
+          <details class="faq-item reveal" data-delay="2">
+            <summary>Can I self-host instead of paying?</summary>
+            <p>Absolutely. Antri is dependency-free HTML/CSS/JS with a small Python backend. Clone the repo, run it locally or on your own cloud, and you keep the full tracker at no cost. Your data stays in your own storage.</p>
+          </details>
+          <details class="faq-item reveal" data-delay="3">
+            <summary>Where is my data stored?</summary>
+            <p>On the free self-hosted setup, your data lives wherever you host it. On Antri Pro, it's saved to your account in managed cloud storage so it syncs across devices. Either way, you can export everything to JSON or CSV anytime.</p>
+          </details>
+          <details class="faq-item reveal" data-delay="4">
+            <summary>Can I cancel anytime?</summary>
+            <p>Yes. Cancel whenever you like — and because your applications are always exportable, you can move back to the free self-hosted version without losing anything.</p>
+          </details>
+        </div>
+      </section>
+
+      <!-- ========================== CTA ============================ -->
+      <section class="section wrap" data-trail-stop>
+        <div class="cta reveal">
+          <span class="eyebrow center">Organize the hunt</span>
+          <h2>Ready when you are.</h2>
+          <p class="lead">Start free today. Upgrade to Pro the moment you want the automation.</p>
+          <div class="hero-actions">
+            <a class="btn btn-primary btn-lg" href="app.html">Start free</a>
+            <a class="btn btn-ghost btn-lg" href="app.html">Get Antri Pro</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================= FOOTER ========================== -->
+      <footer class="footer">
+        <div class="wrap">
+          <div class="footer-top">
+            <div class="footer-brand">
+              <a class="brand" href="index.html"><img class="brand-mark" src="assets/antri-mark.svg" alt=""><span>Antri</span></a>
+              <p>The organized way to run a job search. Inspired by ants — systematic, persistent, and always finding the way back.</p>
+            </div>
+            <div class="footer-cols">
+              <div class="footer-col">
+                <h4>Product</h4>
+                <a href="index.html#what">What is Antri</a>
+                <a href="index.html#features">Features</a>
+                <a href="index.html#how">How it works</a>
+                <a href="pricing.html">Pricing</a>
+                <a href="app.html">Launch app</a>
+              </div>
+              <div class="footer-col">
+                <h4>Project</h4>
+                <a href="https://github.com/walidsuleiman/Antri" target="_blank" rel="noreferrer">GitHub</a>
+                <a href="index.html#opensource">Self-host</a>
+                <a href="index.html#story">Why "Antri"</a>
+                <a href="privacy.html">Privacy</a>
+              </div>
+              <div class="footer-col">
+                <h4>Contact</h4>
+                <a href="mailto:me@walidsuleiman.com">Email</a>
+                <a href="index.html#contact">Get in touch</a>
+              </div>
+            </div>
+          </div>
+          <div class="footer-bottom">
+            <span>© <span id="year">2026</span> Antri · Organize the hunt.</span>
+            <div class="socials">
+              <a href="https://github.com/walidsuleiman/Antri" target="_blank" rel="noreferrer" aria-label="GitHub">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.56 2.34 1.11 2.91.85.09-.66.35-1.11.63-1.37-2.22-.26-4.56-1.14-4.56-5.05 0-1.12.39-2.03 1.03-2.74-.1-.26-.45-1.3.1-2.71 0 0 .84-.27 2.75 1.05A9.4 9.4 0 0 1 12 6.84c.85 0 1.71.12 2.51.34 1.91-1.32 2.75-1.05 2.75-1.05.55 1.41.2 2.45.1 2.71.64.71 1.03 1.62 1.03 2.74 0 3.92-2.34 4.78-4.57 5.04.36.32.68.94.68 1.9 0 1.37-.01 2.48-.01 2.82 0 .27.18.6.69.49A10.02 10.02 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z"/></svg>
+              </a>
+              <a href="mailto:me@walidsuleiman.com" aria-label="Email">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="site.js"></script>
+  </body>
+</html>

@@ -868,7 +868,8 @@ def clean_role_title(value):
 
 if __name__ == "__main__":
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
-    print(f"Serving Antri at http://{HOST}:{PORT}/index.html")
+    print(f"Serving Antri at http://{HOST}:{PORT}/ (marketing home)")
+    print(f"  - App / tracker:  http://{HOST}:{PORT}/app.html")
     if os.environ.get("OPENAI_API_KEY"):
         print("OPENAI_API_KEY detected. AI extraction is enabled.")
     else:

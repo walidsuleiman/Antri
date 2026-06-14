@@ -110,7 +110,8 @@ python server.py
 Then visit:
 
 ```text
-http://127.0.0.1:4173/index.html
+http://127.0.0.1:4173/            # marketing home page
+http://127.0.0.1:4173/app.html    # the tracker app (login + workspace)
 ```
 
 The OpenAI API key is only needed for AI extraction. Antri still serves the login UI and local fallback parsing without it.
@@ -131,10 +132,10 @@ Antri uses Supabase Auth for account login. The browser calls Supabase Auth dire
 
 3. Keep Email auth enabled in Supabase.
 4. Enable the Google provider in Supabase if you want the Google login button to complete sign-in.
-5. Add the local Antri URL to the allowed auth redirect URLs while developing:
+5. Add the local Antri app URL to the allowed auth redirect URLs while developing:
 
    ```text
-   http://127.0.0.1:4173/index.html
+   http://127.0.0.1:4173/app.html
    ```
 
 Do not put a Supabase service role key or any private backend secret in `auth-config.js`. It is a browser-loaded config file.

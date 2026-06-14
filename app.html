@@ -1,0 +1,451 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Antri</title>
+    <link rel="icon" href="assets/antri-mark.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="auth.css">
+  </head>
+  <body>
+    <section id="authGate" class="auth-shell" aria-label="Antri account access">
+      <canvas id="authCanvas" aria-hidden="true"></canvas>
+      <div class="auth-layout">
+        <div class="auth-panel">
+          <div class="auth-brand">
+            <img class="auth-mark" src="assets/antri-mark.svg" alt="" aria-hidden="true">
+            <strong>Antri</strong>
+          </div>
+
+          <div class="auth-copy">
+            <p class="eyebrow">Organize the hunt</p>
+            <h1>Bring every application back into one pipeline.</h1>
+            <p>Track the role, reply, status, follow-up, and notes without rebuilding the search from memory.</p>
+          </div>
+
+          <div class="oauth-stack">
+            <button class="oauth-button google" type="button" id="googleAuthButton">
+              <span aria-hidden="true"><img src="assets/google-g.svg" alt=""></span>
+              Continue with Google
+            </button>
+          </div>
+
+          <div class="auth-divider"><span>or continue with email</span></div>
+
+          <div class="auth-mode" role="group" aria-label="Email account mode">
+            <button class="active" type="button" data-auth-mode="login">Log in</button>
+            <button type="button" data-auth-mode="signup">Create account</button>
+          </div>
+
+          <form id="authForm" class="auth-form">
+            <label>
+              Email
+              <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com">
+            </label>
+            <label>
+              Password
+              <input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters">
+            </label>
+            <button class="primary-button auth-submit" type="submit" id="authSubmitButton">Log in with email</button>
+          </form>
+
+          <output id="authStatus" class="auth-status" aria-live="polite"></output>
+          <a class="auth-privacy-link" href="privacy.html">Privacy</a>
+        </div>
+
+        <section class="auth-preview" aria-label="Application tracking preview">
+          <div class="auth-noise" aria-hidden="true">
+            <span>Greenhouse</span>
+            <span>Inbox</span>
+            <span>Company site</span>
+            <span>Referral</span>
+          </div>
+          <div class="auth-preview-head">
+            <p class="eyebrow">One search view</p>
+            <strong>Scattered applications become next actions.</strong>
+          </div>
+          <div class="auth-preview-board" aria-hidden="true">
+            <article class="preview-job active">
+              <div>
+                <strong>Data Analyst</strong>
+                <span>Applied May 22</span>
+              </div>
+              <em>Follow-up due</em>
+            </article>
+            <article class="preview-job">
+              <div>
+                <strong>Product Associate</strong>
+                <span>Recruiter replied</span>
+              </div>
+              <em>Interviewing</em>
+            </article>
+            <article class="preview-job">
+              <div>
+                <strong>Software Engineer</strong>
+                <span>Saved from browser</span>
+              </div>
+              <em>Review</em>
+            </article>
+          </div>
+          <div class="auth-preview-metrics" aria-hidden="true">
+            <span><strong>18</strong> tracked</span>
+            <span><strong>4</strong> replies</span>
+            <span><strong>2</strong> due today</span>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <div id="appShell" class="app-shell" hidden>
+      <aside class="sidebar" aria-label="Workspace navigation">
+        <div class="brand">
+          <img class="brand-mark" src="assets/antri-mark.svg" alt="" aria-hidden="true">
+          <div>
+            <strong>Antri</strong>
+            <span>Job search workspace</span>
+          </div>
+        </div>
+
+        <nav class="nav-list" aria-label="Primary">
+          <button class="nav-item active" type="button" data-view="pipeline" title="Pipeline">
+            <span aria-hidden="true">#</span>
+            <span>Pipeline</span>
+          </button>
+          <button class="nav-item" type="button" data-view="followups" title="Follow-ups">
+            <span aria-hidden="true">@</span>
+            <span>Follow-ups</span>
+          </button>
+          <button class="nav-item" type="button" data-view="insights" title="Insights">
+            <span aria-hidden="true">~</span>
+            <span>Insights</span>
+          </button>
+          <button class="nav-item" type="button" data-view="integrations" title="Integrations">
+            <span aria-hidden="true">io</span>
+            <span>Integrations</span>
+          </button>
+        </nav>
+
+        <div class="sync-box">
+          <div>
+            <strong>Email automation</strong>
+            <span>Prepared for Gmail and Outlook connectors.</span>
+          </div>
+          <span class="sync-state">Planned</span>
+        </div>
+
+        <div class="sidebar-footer">
+          <a href="privacy.html">Privacy policy</a>
+        </div>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Career command center</p>
+            <h1>Your job search, organized</h1>
+          </div>
+          <div class="topbar-actions">
+            <button class="ghost-button" type="button" id="importButton" title="Import JSON">Import</button>
+            <button class="ghost-button" type="button" id="exportButton" title="Export JSON">Export</button>
+            <button class="primary-button" type="button" id="openFormButton">
+              <span aria-hidden="true">+</span>
+              Add job
+            </button>
+            <div class="account-menu" id="accountMenu">
+              <button
+                class="account-trigger"
+                type="button"
+                id="accountMenuButton"
+                aria-haspopup="menu"
+                aria-expanded="false"
+                title="Account menu"
+              >
+                <span class="account-avatar" aria-hidden="true"></span>
+                <span class="account-chevron" aria-hidden="true"></span>
+                <span class="sr-only">Open account menu</span>
+              </button>
+              <div class="account-dropdown" id="accountDropdown" role="menu" hidden>
+                <div class="account-identity">
+                  <span>Signed in as</span>
+                  <strong id="accountEmail"></strong>
+                </div>
+                <a class="account-action" href="privacy.html" role="menuitem">Privacy policy</a>
+                <button class="account-action" type="button" id="signOutButton" role="menuitem">Sign out</button>
+              </div>
+            </div>
+            <input id="importFile" type="file" accept="application/json" hidden>
+          </div>
+        </header>
+        <output id="syncStatus" class="sync-status" aria-live="polite"></output>
+
+        <section class="metric-grid" aria-label="Application summary">
+          <article class="metric">
+            <span>Total applications</span>
+            <strong id="totalApplications">0</strong>
+          </article>
+          <article class="metric">
+            <span>Active pipeline</span>
+            <strong id="activeApplications">0</strong>
+          </article>
+          <article class="metric">
+            <span>Heard back</span>
+            <strong id="heardBackCount">0</strong>
+          </article>
+          <article class="metric accent">
+            <span>Follow-ups due</span>
+            <strong id="followUpCount">0</strong>
+          </article>
+        </section>
+
+        <section class="controls" aria-label="Filters">
+          <div class="filter-topline">
+            <label class="search-field">
+              <span aria-hidden="true">?</span>
+              <input id="searchInput" type="search" placeholder="Search role, company, location, notes">
+            </label>
+            <div class="control-row">
+              <select id="statusFilter" aria-label="Filter by status">
+                <option value="all">All statuses</option>
+              </select>
+              <select id="sortSelect" aria-label="Sort applications">
+                <option value="date-desc">Newest to oldest</option>
+                <option value="date-asc">Oldest to newest</option>
+                <option value="role-asc">Alphabetical A-Z</option>
+                <option value="role-desc">Alphabetical Z-A</option>
+                <option value="company-asc">Company A-Z</option>
+                <option value="company-desc">Company Z-A</option>
+                <option value="followup">Follow-up date</option>
+                <option value="priority">Priority</option>
+              </select>
+            </div>
+          </div>
+          <div class="source-filter">
+            <span class="filter-label">Source</span>
+            <div id="sourceFilters" class="source-filters" aria-label="Filter by source"></div>
+          </div>
+        </section>
+
+        <section id="pipelineView" class="view active-view" aria-label="Applications">
+          <div class="section-head">
+            <div>
+              <h2>Applications</h2>
+              <p id="resultCount">0 records</p>
+            </div>
+            <button class="ghost-button" type="button" id="csvButton">Download CSV</button>
+          </div>
+          <div id="jobList" class="job-list"></div>
+          <div id="emptyState" class="empty-state" hidden>
+            <strong>No applications match this view.</strong>
+            <span>Add a job or adjust your filters.</span>
+          </div>
+        </section>
+
+        <section id="followupsView" class="view" aria-label="Follow-ups">
+          <div class="section-head">
+            <div>
+              <h2>Follow-ups</h2>
+              <p>Upcoming and overdue next actions</p>
+            </div>
+          </div>
+          <div id="followupList" class="timeline"></div>
+        </section>
+
+        <section id="insightsView" class="view" aria-label="Insights">
+          <div class="section-head">
+            <div>
+              <h2>Insights</h2>
+              <p>Status mix, response rate, and sources</p>
+            </div>
+          </div>
+          <div class="insight-layout">
+            <div class="chart-panel">
+              <h3>Status distribution</h3>
+              <div id="statusChart" class="status-chart"></div>
+            </div>
+            <div class="chart-panel">
+              <h3>Source performance</h3>
+              <div id="sourceChart" class="source-chart"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="integrationsView" class="view" aria-label="Integrations">
+          <div class="section-head">
+            <div>
+              <h2>Integrations</h2>
+              <p>Connectors planned for automated application tracking</p>
+            </div>
+          </div>
+          <div class="integration-grid">
+            <article class="integration-card">
+              <div class="integration-logo">G</div>
+              <div>
+                <h3>Gmail</h3>
+                <p>Detect recruiter replies, parse interview invites, and attach email threads to applications.</p>
+              </div>
+              <span>OAuth ready</span>
+            </article>
+            <article class="integration-card">
+              <div class="integration-logo outlook">O</div>
+              <div>
+                <h3>Outlook</h3>
+                <p>Sync hiring emails, calendar follow-ups, and company contacts from Microsoft accounts.</p>
+              </div>
+              <span>OAuth ready</span>
+            </article>
+            <article class="integration-card">
+              <div class="integration-logo api">API</div>
+              <div>
+                <h3>Monetization layer</h3>
+                <p>Subscription-ready architecture for cloud sync, AI parsing, reminders, and team dashboards.</p>
+              </div>
+              <span>Future tier</span>
+            </article>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="drawerBackdrop" class="drawer-backdrop" hidden></div>
+    <aside id="jobDrawer" class="drawer" aria-label="Job application form" aria-hidden="true" inert>
+      <form id="jobForm">
+        <div class="drawer-head">
+          <div>
+            <p class="eyebrow">Application record</p>
+            <h2 id="drawerTitle">Add job</h2>
+          </div>
+          <button class="drawer-close" type="button" id="closeDrawerButton" title="Close job form" aria-label="Close job form">
+            <span aria-hidden="true"></span>
+          </button>
+        </div>
+
+        <input type="hidden" id="jobId">
+
+        <section class="smart-add" aria-label="Smart add">
+          <div class="smart-add-head">
+            <div>
+              <p class="smart-kicker">Smart Add</p>
+              <h3>Turn a posting into a draft.</h3>
+              <p>Paste a job link first. Add job text only when a site blocks extraction.</p>
+            </div>
+            <span id="smartResult" class="smart-result" aria-live="polite"></span>
+          </div>
+          <label class="full-span">
+            Job post link
+            <input id="smartUrlInput" type="url" placeholder="Paste LinkedIn, Indeed, Greenhouse, Lever, Workday, or company job URL">
+          </label>
+          <label class="full-span">
+            Optional fallback text
+            <textarea id="smartTextInput" rows="4" placeholder="If the link fails, paste the visible job post text here"></textarea>
+          </label>
+          <div class="smart-add-actions">
+            <button class="ghost-button" type="button" id="extractTextButton">Extract from text</button>
+            <button class="ghost-button" type="button" id="clearSmartButton">Clear</button>
+            <button class="primary-button" type="button" id="extractUrlButton">Extract from link</button>
+          </div>
+        </section>
+
+        <div class="form-grid">
+          <label>
+            Job role
+            <input id="roleInput" required placeholder="Product Manager">
+          </label>
+          <label>
+            Company
+            <input id="companyInput" required placeholder="Acme Inc.">
+          </label>
+          <label>
+            Location
+            <input id="locationInput" placeholder="New York, NY or Remote">
+          </label>
+          <label>
+            Date applied
+            <input id="dateAppliedInput" type="date" required>
+          </label>
+          <label>
+            Status
+            <select id="statusInput"></select>
+          </label>
+          <label>
+            Heard back?
+            <select id="heardBackInput">
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </label>
+          <label>
+            Priority
+            <select id="priorityInput">
+              <option value="High">High</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="Low">Low</option>
+            </select>
+          </label>
+          <label>
+            Compensation
+            <input id="compensationInput" placeholder="$90k-$115k">
+          </label>
+          <label>
+            Source
+            <input id="sourceInput" placeholder="LinkedIn, referral, company site">
+          </label>
+          <label>
+            Contact
+            <input id="contactInput" placeholder="Recruiter or hiring manager">
+          </label>
+          <label>
+            Job post URL
+            <input id="urlInput" type="url" placeholder="https://">
+          </label>
+          <label>
+            Follow-up date
+            <input id="followUpInput" type="date">
+          </label>
+          <label class="full-span">
+            Notes
+            <textarea id="notesInput" rows="5" placeholder="Interview details, requirements, reminders, email thread notes"></textarea>
+          </label>
+        </div>
+
+        <div class="drawer-actions">
+          <p class="ai-review-notice">AntriAI can make mistakes. Please review details before saving.</p>
+          <button class="danger-button" type="button" id="deleteButton">Delete</button>
+          <div>
+            <button class="ghost-button" type="button" id="cancelButton">Cancel</button>
+            <button class="primary-button" type="submit">Save job</button>
+          </div>
+        </div>
+      </form>
+    </aside>
+
+    <template id="jobCardTemplate">
+      <article class="job-card">
+        <div class="job-card-main">
+          <div>
+            <div class="job-title-row">
+              <h3></h3>
+              <span class="priority-pill"></span>
+            </div>
+            <p class="company-line"></p>
+          </div>
+          <span class="status-pill"></span>
+        </div>
+        <div class="job-meta"></div>
+        <p class="job-notes"></p>
+        <div class="job-actions">
+          <a class="job-link" target="_blank" rel="noreferrer">Open posting</a>
+          <button class="ghost-button small" type="button">Edit</button>
+        </div>
+      </article>
+    </template>
+
+    <script src="auth-visual.js?v=login-revamp-1"></script>
+    <script src="auth-config.js?v=draft-login-1"></script>
+    <script src="auth-client.js?v=draft-login-1"></script>
+    <script src="app.js?v=draft-login-1"></script>
+  </body>
+</html>
