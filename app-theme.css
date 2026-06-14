@@ -366,3 +366,159 @@ select optgroup {
   .metric, .integration-card, .chart-panel, .job-card { animation: none !important; }
   .integration-card > span.soon::before { animation: none; }
 }
+
+/* --------------------------------------------------------- paywall: plan pill */
+.plan-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--muted);
+  font-weight: 560;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+  transition: transform 0.2s var(--ease-app), color 0.2s var(--ease-app),
+    border-color 0.2s var(--ease-app), background 0.2s var(--ease-app);
+}
+.plan-pill:hover { color: var(--ink); border-color: var(--line-strong); transform: translateY(-1px); }
+.plan-pill[data-plan="full"] {
+  color: #fcd34d;
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+}
+.plan-pill[data-plan="pro"] {
+  color: var(--accent-ink);
+  border-color: transparent;
+  background: linear-gradient(180deg, #8cc0ff, #3b82f6);
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4);
+  cursor: default;
+}
+.plan-pill[data-plan="pro"]::before { content: "★"; font-size: 0.8em; }
+
+/* plan block + action in the account menu */
+.account-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 11px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.account-plan:empty { display: none; }
+.plan-tag {
+  align-self: flex-start;
+  font-size: 0.68rem;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8c95a6;
+}
+.plan-tag.pro { color: var(--accent); }
+.account-action.plan-action {
+  justify-content: center;
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 600;
+}
+.account-action.plan-action:hover { background: rgba(96, 165, 250, 0.18); border-color: var(--accent-line); }
+
+/* --------------------------------------------------------- Smart Add lock */
+.smart-add { position: relative; overflow: hidden; }
+.smart-lock {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  border-radius: inherit;
+  background: rgba(8, 10, 16, 0.74);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.smart-lock-inner { display: grid; gap: 10px; justify-items: center; max-width: 340px; text-align: center; }
+.smart-lock-inner strong { font-size: 1.05rem; }
+.smart-lock-inner p { color: var(--muted); font-size: 0.9rem; }
+.smart-lock-inner .primary-button { margin-top: 4px; }
+.lock-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-line);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-size: 0.74rem;
+  font-weight: 650;
+}
+.lock-badge svg { width: 14px; height: 14px; }
+
+/* --------------------------------------------------------- upgrade modal */
+.upgrade-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(3, 5, 10, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+.upgrade-modal {
+  position: fixed;
+  z-index: 41;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 32px));
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  padding: 34px;
+  border: 1px solid var(--line-strong);
+  border-radius: 22px;
+  background:
+    radial-gradient(520px 280px at 50% -10%, rgba(37, 99, 235, 0.22), transparent 60%),
+    var(--panel-strong);
+  box-shadow: 0 40px 90px rgba(0, 0, 0, 0.6);
+  animation: upgradeIn 0.3s var(--ease-app) both;
+}
+@keyframes upgradeIn {
+  from { opacity: 0; transform: translate(-50%, -46%) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+.upgrade-modal .eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  margin: 0 0 10px; color: var(--accent);
+  font-size: 0.76rem; font-weight: 600; letter-spacing: 0.14em;
+}
+.upgrade-modal h2 { font-size: 1.55rem; letter-spacing: -0.02em; }
+.upgrade-reason { margin-top: 10px; color: var(--muted); font-size: 0.95rem; line-height: 1.5; }
+.upgrade-price { display: flex; align-items: baseline; gap: 7px; margin: 20px 0 2px; }
+.upgrade-price .amt { font-size: 2.5rem; font-weight: 700; letter-spacing: -0.03em; }
+.upgrade-price .per { color: var(--muted); }
+.upgrade-feats { list-style: none; margin: 18px 0 0; padding: 0; display: grid; gap: 11px; }
+.upgrade-feats li { display: flex; gap: 10px; align-items: flex-start; font-size: 0.92rem; color: #c4ccd8; }
+.upgrade-feats svg { width: 16px; height: 16px; color: var(--accent); flex: none; margin-top: 2px; }
+.upgrade-modal .primary-button { width: 100%; margin-top: 22px; }
+.upgrade-status { display: block; min-height: 1.2em; margin-top: 10px; text-align: center; color: var(--accent); font-size: 0.85rem; }
+.upgrade-status:empty { display: none; }
+.upgrade-fine { margin-top: 12px; text-align: center; color: #69707e; font-size: 0.78rem; }
+.upgrade-close {
+  position: absolute; top: 16px; right: 16px;
+  width: 34px; height: 34px;
+  display: grid; place-items: center;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04); color: var(--muted);
+  transition: color 0.2s var(--ease-app), border-color 0.2s var(--ease-app);
+}
+.upgrade-close:hover { color: var(--ink); border-color: var(--line-strong); }
+.upgrade-close svg { width: 16px; height: 16px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .upgrade-modal { animation: none; }
+}
