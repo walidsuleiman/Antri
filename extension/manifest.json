@@ -1,15 +1,23 @@
 {
   "manifest_version": 3,
   "name": "Antri Job Saver",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "Capture the current job page and open an Antri application draft.",
   "permissions": [
     "activeTab",
     "scripting",
-    "tabs"
+    "tabs",
+    "storage"
   ],
   "host_permissions": [
     "https://antri.xyz/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://antri.xyz/*"],
+      "js": ["session-bridge.js"],
+      "run_at": "document_idle"
+    }
   ],
   "icons": {
     "16": "icons/icon16.png",

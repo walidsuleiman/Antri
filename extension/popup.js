@@ -1,16 +1,51 @@
-const ANTRI_ORIGINS = [
-  "https://antri.xyz"
-];
+const ANTRI_ORIGINS = ["https://antri.xyz"];
+// Root works on both deployments: the app is served there directly, and the
+// marketing page redirects a "?draft=" link to /app.html.
+const APP_PATH = "/";
 
 const saveButton = document.getElementById("saveButton");
+const actionButton = document.getElementById("actionButton");
 const status = document.getElementById("status");
 
 saveButton.addEventListener("click", saveCurrentJob);
+init();
+
+async function init() {
+  const token = await getStoredToken();
+  if (token) {
+    resetActions();
+    setStatus("Open a job page, then save it to Antri.", false);
+  } else {
+    showSignedOut();
+  }
+}
+
+async function getStoredToken() {
+  try {
+    const { antriSession } = await chrome.storage.local.get("antriSession");
+    if (!antriSession || !antriSession.access_token) {
+      return null;
+    }
+    const now = Math.floor(Date.now() / 1000);
+    if (antriSession.expires_at && Number(antriSession.expires_at) <= now) {
+      return null; // expired — a fresh visit to Antri refreshes it
+    }
+    return antriSession.access_token;
+  } catch (error) {
+    return null;
+  }
+}
 
 async function saveCurrentJob() {
-  setStatus("Reading this page...", true);
+  setStatus("Reading this page…", true);
 
   try {
+    const token = await getStoredToken();
+    if (!token) {
+      showSignedOut();
+      return;
+    }
+
     const tab = await getActiveTab();
     if (!tab?.id || !/^https?:/i.test(tab.url || "")) {
       throw new Error("Open a normal job page first.");
@@ -22,11 +57,21 @@ async function saveCurrentJob() {
     });
     const page = capture?.result;
     if (!page?.text || page.text.length < 40) {
-      throw new Error("This page did not expose enough readable job text.");
+      throw new Error("This page didn't expose enough readable job text.");
     }
 
-    setStatus("Extracting with Antri...", true);
-    const { response, origin } = await extractWithAvailableAntri(page);
+    setStatus("Extracting with Antri…", true);
+    const { response, origin } = await extractWithAvailableAntri(page, token);
+
+    if (response.status === 401) {
+      showSignedOut();
+      return;
+    }
+    if (response.status === 402) {
+      showProRequired(origin);
+      return;
+    }
+
     const payload = await response.json();
     if (!response.ok) {
       throw new Error(payload.error || "Antri could not extract this page.");
@@ -40,7 +85,7 @@ async function saveCurrentJob() {
   }
 }
 
-async function extractWithAvailableAntri(page) {
+async function extractWithAvailableAntri(page, token) {
   const body = JSON.stringify({
     url: page.url,
     pageTitle: page.title,
@@ -51,7 +96,10 @@ async function extractWithAvailableAntri(page) {
     try {
       const response = await fetch(`${origin}/api/extract-page`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
         body
       });
       return { response, origin };
@@ -64,7 +112,7 @@ async function extractWithAvailableAntri(page) {
 }
 
 async function openAntriDraft(origin, draft) {
-  const draftUrl = `${origin}/index.html?draft=${encodeURIComponent(draft)}`;
+  const draftUrl = `${origin}${APP_PATH}?draft=${encodeURIComponent(draft)}`;
   const existingTabs = await chrome.tabs.query({ url: `${origin}/*` });
   const existingTab = existingTabs.find((tab) => tab.id && tab.windowId);
 
@@ -285,4 +333,26 @@ function encodeDraft(job) {
 function setStatus(message, loading) {
   status.textContent = message;
   saveButton.disabled = loading;
+}
+
+function showSignedOut() {
+  setStatus("Sign in to Antri to save jobs with the extension.", false);
+  showAction("Open Antri to sign in", ANTRI_ORIGINS[0] + APP_PATH);
+}
+
+function showProRequired(origin) {
+  setStatus("The browser saver is part of Antri Pro.", false);
+  showAction("Start your 3-day free trial", (origin || ANTRI_ORIGINS[0]) + APP_PATH);
+}
+
+function showAction(label, url) {
+  actionButton.textContent = label;
+  actionButton.onclick = function () { chrome.tabs.create({ url: url }); };
+  actionButton.hidden = false;
+  saveButton.hidden = true;
+}
+
+function resetActions() {
+  actionButton.hidden = true;
+  saveButton.hidden = false;
 }
