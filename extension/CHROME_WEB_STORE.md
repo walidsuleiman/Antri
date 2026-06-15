@@ -52,13 +52,21 @@ Needed to read visible job-posting text and structured job posting data from the
 
 Needed to identify the active tab and open the resulting draft in Antri.
 
+### `storage`
+
+Needed to remember the user's signed-in Antri session token (read on antri.xyz) so the extension can authenticate extraction requests to the user's own Antri Pro account.
+
 ### Host permissions
 
-`https://antri.xyz/*` is needed to send the selected job-posting data to Antri's extraction endpoint and open the resulting draft in the Antri web app.
+`https://antri.xyz/*` is needed to send the selected job-posting data to Antri's extraction endpoint, read the signed-in session on antri.xyz, and open the resulting draft in the Antri web app.
+
+### Content script on `https://antri.xyz/*`
+
+A small content script runs only on antri.xyz to read the user's own signed-in session token from the page and store it for the extension, so extraction requests can be authenticated against the user's Antri Pro subscription. It does not run on, read, or modify any other site.
 
 ## Data Disclosure Notes
 
-The extension may transmit the selected job page URL, page title, visible job-page text, and structured job posting details after the user clicks Save current job.
+The extension may transmit the selected job page URL, page title, visible job-page text, and structured job posting details after the user clicks Save current job. It also sends the user's own signed-in Antri session token to authenticate the request against their account.
 
 That data is used to extract fields for an Antri draft application record. Job-posting text may be processed by Antri's AI extraction provider when AI extraction is enabled. The user reviews the draft before saving it into their Antri account.
 
@@ -66,11 +74,12 @@ The extension does not automatically scan browsing activity, sell extension page
 
 ## Reviewer Notes
 
-1. Open a public job posting page.
-2. Click the Antri Job Saver toolbar action.
-3. Click Save current job.
+1. Sign in to Antri at https://antri.xyz with an active Antri Pro subscription (the browser saver is a Pro feature).
+2. Open a public job posting page.
+3. Click the Antri Job Saver toolbar action, then Save current job.
 4. The extension captures the selected job page and opens a draft inside Antri, reusing an existing Antri tab when one is already open.
-5. Sign in to Antri if prompted, then review the draft before saving.
+5. If not signed in or not on Pro, the popup links you to Antri to sign in or start a free trial instead.
+6. Review the draft before saving.
 
 ## Submission Assets Still Needed In Dashboard
 
