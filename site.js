@@ -289,10 +289,7 @@
     function makeMarker(x, y) {
       var g = el("g", "trail-x");
       g.setAttribute("transform", "translate(" + x.toFixed(1) + " " + y.toFixed(1) + ")");
-      var R = 21, A = 14;
-      var glow = el("circle", "glow"); glow.setAttribute("r", R);
-      var ring = el("circle", "ring"); ring.setAttribute("r", R);
-      g.appendChild(glow); g.appendChild(ring);
+      var A = 14;
       [[-A, -A, A, A], [-A, A, A, -A]].forEach(function (c) {
         var arm = el("line", "arm");
         arm.setAttribute("x1", c[0]); arm.setAttribute("y1", c[1]);

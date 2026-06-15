@@ -615,23 +615,7 @@ section { position: relative; }
   filter: drop-shadow(0 0 9px var(--glow));
 }
 
-/* X markers — a treasure mark at each section that fills up on arrival */
-.trail-x .glow {
-  fill: var(--accent);
-  opacity: 0;
-  transform: scale(0.2);
-  transform-box: fill-box;
-  transform-origin: center;
-  transition: opacity 0.6s var(--ease), transform 0.6s var(--ease);
-}
-.trail-x .ring {
-  fill: none;
-  stroke: rgba(150, 170, 200, 0.22);
-  stroke-width: 2;
-  stroke-dasharray: 2 7;          /* dotted, hand-drawn feel */
-  opacity: 0.6;
-  transition: stroke 0.6s var(--ease), opacity 0.6s var(--ease);
-}
+/* X markers — a treasure mark at each section that lights up on arrival */
 .trail-x .arm {
   fill: none;
   stroke: rgba(150, 170, 200, 0.30);
@@ -639,8 +623,6 @@ section { position: relative; }
   stroke-linecap: round;
   transition: stroke 0.6s var(--ease), opacity 0.6s var(--ease);
 }
-.trail-x.filled .glow { opacity: 0.22; transform: scale(1); }
-.trail-x.filled .ring { stroke: var(--accent-line); opacity: 1; }
 .trail-x.filled .arm {
   stroke: var(--accent);
   filter: drop-shadow(0 0 6px var(--glow));
@@ -805,6 +787,7 @@ section { position: relative; }
 .price-amount .amt { font-size: clamp(2.4rem, 5vw, 3.2rem); font-weight: 700; letter-spacing: -0.04em; }
 .price-amount .per { color: var(--muted); font-size: 0.95rem; }
 .price-sub { color: var(--muted-2); font-size: 0.85rem; min-height: 1.2em; }
+.price-sub.trial { color: var(--accent); font-weight: 540; }
 .price-card .btn { margin-top: 26px; width: 100%; }
 .price-features { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 13px; }
 .price-features li { display: flex; gap: 11px; align-items: flex-start; font-size: 0.95rem; color: var(--ink-dim); }
