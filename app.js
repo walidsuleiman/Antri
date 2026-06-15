@@ -281,6 +281,7 @@ async function handleAuthSession(session) {
     render();
     setSyncStatus(`Cloud synced. ${jobs.length} ${jobs.length === 1 ? "application" : "applications"} loaded.`, "success");
     openDraftFromUrl();
+    handleUpgradeReturn();
   } catch (error) {
     render();
     setSyncStatus(cloudStorageErrorMessage(error), "error");
@@ -619,7 +620,7 @@ async function startCheckout() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`
       },
-      body: JSON.stringify({})
+      body: JSON.stringify({ returnUrl: window.location.origin + window.location.pathname })
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload.url) {
@@ -632,6 +633,38 @@ async function startCheckout() {
   }
 }
 
+function handleUpgradeReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const status = params.get("upgrade");
+  if (!status) return;
+  params.delete("upgrade");
+  const query = params.toString();
+  window.history.replaceState({}, document.title, `${window.location.pathname}${query ? `?${query}` : ""}`);
+
+  if (status === "cancel") {
+    setSyncStatus("Checkout canceled — you can upgrade anytime.");
+    return;
+  }
+  if (status !== "success") return;
+
+  setSyncStatus("Welcome to Antri Pro! Activating your plan…", "success");
+  let tries = 0;
+  const poll = async () => {
+    tries += 1;
+    await loadSubscription();
+    updatePlanUI();
+    if (isPro) {
+      applySmartLock();
+      setSyncStatus("Antri Pro is active — unlimited applications and Smart Add unlocked.", "success");
+    } else if (tries < 6) {
+      setTimeout(poll, 1500);
+    } else {
+      setSyncStatus("Payment received. If Pro features don't unlock shortly, refresh the page.", "success");
+    }
+  };
+  setTimeout(poll, 1200);
+}
+
 async function manageSubscription() {
   closeAccountMenu();
   try {
@@ -642,7 +675,7 @@ async function manageSubscription() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${session.access_token}`
       },
-      body: JSON.stringify({})
+      body: JSON.stringify({ returnUrl: window.location.origin + window.location.pathname })
     });
     const payload = await response.json().catch(() => ({}));
     if (!response.ok || !payload.url) {
@@ -1041,11 +1074,21 @@ async function extractSmartUrl() {
   setSmartLoading(true, "Reading link...");
 
   try {
+    const session = await getActiveSession();
     const response = await fetch("/api/extract-job", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`
+      },
       body: JSON.stringify({ url, fallbackText: elements.smartTextInput.value.trim() })
     });
+
+    if (response.status === 402) {
+      elements.smartResult.textContent = "Smart Add is part of Antri Pro.";
+      openUpgradeModal("smartadd");
+      return;
+    }
 
     const payload = await response.json();
     if (!response.ok) {

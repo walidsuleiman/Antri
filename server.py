@@ -1,8 +1,11 @@
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from html.parser import HTMLParser
-from urllib.parse import parse_qs, quote, urlparse
+from urllib.parse import parse_qs, quote, urlencode, urlparse
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+from datetime import datetime, timezone
+import hashlib
+import hmac
 import html as html_lib
 import json
 import os
@@ -15,6 +18,193 @@ PORT = int(os.environ.get("PORT", "4173"))
 MODEL = os.environ.get("ANTRI_OPENAI_MODEL", "gpt-4o-mini")
 CANONICAL_HOST = os.environ.get("ANTRI_CANONICAL_HOST", "antri.xyz")
 RENDER_HOST = "antri.onrender.com"
+
+# ---------------------------------------------------------------------------
+# Billing (Stripe) + Supabase service access.
+# When Stripe is not configured the paywall is OFF and everything stays free,
+# so self-hosters keep Smart Add + the extension at no cost.
+# ---------------------------------------------------------------------------
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
+SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+
+
+def stripe_config():
+    """Resolve the active Stripe keys from STRIPE_MODE ('test' | 'live')."""
+    mode = (os.environ.get("STRIPE_MODE", "test") or "test").strip().lower()
+    if mode == "live":
+        return {
+            "mode": "live",
+            "secret": os.environ.get("STRIPE_SECRET_KEY", ""),
+            "price": os.environ.get("STRIPE_PRICE_ID", ""),
+            "webhook_secret": os.environ.get("STRIPE_WEBHOOK_SECRET", ""),
+        }
+    return {
+        "mode": "test",
+        "secret": os.environ.get("STRIPE_TEST_SECRET_KEY", ""),
+        "price": os.environ.get("STRIPE_TEST_PRICE_ID", ""),
+        "webhook_secret": os.environ.get("STRIPE_TEST_WEBHOOK_SECRET", ""),
+    }
+
+
+def billing_enabled():
+    """True only when Stripe + Supabase service access are both configured."""
+    return bool(stripe_config()["secret"] and SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
+
+
+def now_iso():
+    return datetime.now(timezone.utc).isoformat()
+
+
+def iso_from_unix(timestamp):
+    try:
+        return datetime.fromtimestamp(int(timestamp), tz=timezone.utc).isoformat()
+    except (TypeError, ValueError, OSError):
+        return None
+
+
+def stripe_api(path, secret, data=None, method="POST"):
+    body = urlencode(data, doseq=True).encode("utf-8") if data else None
+    request = Request(
+        f"https://api.stripe.com/v1/{path}",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {secret}",
+            "Content-Type": "application/x-www-form-urlencoded",
+        },
+        method=method,
+    )
+    with urlopen(request, timeout=20) as response:
+        return json.loads(response.read().decode("utf-8"))
+
+
+def supabase_get_user(access_token):
+    """Validate a Supabase access token and return the user dict (or None)."""
+    if not (SUPABASE_URL and SUPABASE_ANON_KEY and access_token):
+        return None
+    request = Request(
+        f"{SUPABASE_URL}/auth/v1/user",
+        headers={"apikey": SUPABASE_ANON_KEY, "Authorization": f"Bearer {access_token}"},
+    )
+    try:
+        with urlopen(request, timeout=10) as response:
+            return json.loads(response.read().decode("utf-8"))
+    except (HTTPError, URLError, ValueError):
+        return None
+
+
+def supabase_service(method, path, body=None, prefer=None):
+    """Call the Supabase REST API with the service-role key (bypasses RLS)."""
+    headers = {
+        "apikey": SUPABASE_SERVICE_ROLE_KEY,
+        "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+        "Content-Type": "application/json",
+    }
+    if prefer:
+        headers["Prefer"] = prefer
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    request = Request(f"{SUPABASE_URL}/rest/v1/{path}", data=data, headers=headers, method=method)
+    with urlopen(request, timeout=10) as response:
+        raw = response.read().decode("utf-8")
+        return json.loads(raw) if raw else None
+
+
+def get_subscription_row(user_id):
+    if not (SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY and user_id):
+        return None
+    try:
+        rows = supabase_service("GET", f"subscriptions?user_id=eq.{quote(user_id)}&select=*&limit=1")
+    except (HTTPError, URLError, ValueError):
+        return None
+    return rows[0] if rows else None
+
+
+def write_subscription(user_id, fields):
+    row = {"user_id": user_id, "updated_at": now_iso()}
+    row.update(fields)
+    supabase_service(
+        "POST",
+        "subscriptions?on_conflict=user_id",
+        body=[row],
+        prefer="resolution=merge-duplicates",
+    )
+
+
+def user_is_pro(user_id):
+    sub = get_subscription_row(user_id)
+    if not sub or sub.get("status") not in ("active", "trialing"):
+        return False
+    period_end = sub.get("current_period_end")
+    if period_end:
+        try:
+            end = datetime.fromisoformat(period_end.replace("Z", "+00:00"))
+            if end < datetime.now(timezone.utc):
+                return False
+        except ValueError:
+            pass
+    return True
+
+
+def verify_stripe_signature(payload, signature_header, secret):
+    """Verify Stripe's `Stripe-Signature` header (t=...,v1=... HMAC-SHA256)."""
+    if not (signature_header and secret):
+        return False
+    parts = {}
+    for item in signature_header.split(","):
+        if "=" in item:
+            key, value = item.split("=", 1)
+            parts[key.strip()] = value.strip()
+    timestamp = parts.get("t")
+    given = parts.get("v1")
+    if not (timestamp and given):
+        return False
+    signed_payload = timestamp.encode("utf-8") + b"." + payload
+    expected = hmac.new(secret.encode("utf-8"), signed_payload, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, given)
+
+
+def handle_stripe_event(event, cfg):
+    """Apply a verified Stripe webhook event to the subscriptions table."""
+    event_type = event.get("type", "")
+    obj = (event.get("data") or {}).get("object") or {}
+
+    if event_type == "checkout.session.completed":
+        user_id = (obj.get("metadata") or {}).get("user_id") or obj.get("client_reference_id")
+        if not user_id:
+            return
+        subscription_id = obj.get("subscription")
+        status = "active"
+        current_period_end = None
+        if subscription_id:
+            try:
+                sub = stripe_api(f"subscriptions/{subscription_id}", cfg["secret"], method="GET")
+                status = sub.get("status", "active")
+                current_period_end = iso_from_unix(sub.get("current_period_end"))
+            except (HTTPError, URLError, ValueError):
+                pass
+        write_subscription(user_id, {
+            "status": status,
+            "stripe_customer_id": obj.get("customer"),
+            "stripe_subscription_id": subscription_id,
+            "current_period_end": current_period_end,
+        })
+        return
+
+    if event_type in (
+        "customer.subscription.created",
+        "customer.subscription.updated",
+        "customer.subscription.deleted",
+    ):
+        user_id = (obj.get("metadata") or {}).get("user_id")
+        if not user_id:
+            return
+        status = "canceled" if event_type.endswith("deleted") else obj.get("status", "active")
+        write_subscription(user_id, {
+            "status": status,
+            "stripe_customer_id": obj.get("customer"),
+            "stripe_subscription_id": obj.get("id"),
+            "current_period_end": iso_from_unix(obj.get("current_period_end")),
+        })
 
 
 JOB_SCHEMA = {
@@ -98,8 +288,19 @@ class Handler(SimpleHTTPRequestHandler):
         super().do_GET()
 
     def do_POST(self):
+        if self.path == "/api/stripe-webhook":
+            self.handle_stripe_webhook()
+            return
+        if self.path == "/api/create-checkout-session":
+            self.handle_checkout()
+            return
+        if self.path == "/api/portal-session":
+            self.handle_portal()
+            return
         if self.path not in {"/api/extract-job", "/api/extract-page"}:
             self.send_json({"error": "Not found"}, 404)
+            return
+        if not self.allow_extraction():
             return
 
         try:
@@ -179,6 +380,124 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    # ---------------------- billing / paywall helpers ----------------------
+    def bearer_token(self):
+        auth = self.headers.get("Authorization", "")
+        if auth.lower().startswith("bearer "):
+            return auth[7:].strip()
+        return ""
+
+    def authed_user(self):
+        token = self.bearer_token()
+        return supabase_get_user(token) if token else None
+
+    def return_base(self, return_url=None):
+        """A safe base URL to send users back to after Stripe (no open redirect)."""
+        origin = self.headers.get("Origin", "")
+        if return_url and origin and return_url.startswith(origin):
+            return return_url.split("?")[0]
+        if origin:
+            return f"{origin}/app.html"
+        return f"https://{CANONICAL_HOST}/app.html"
+
+    def allow_extraction(self):
+        """Gate the AI extraction endpoints. Free (paywall off) => allowed."""
+        if not billing_enabled():
+            return True
+        user = self.authed_user()
+        if not user or not user.get("id"):
+            self.send_json({"error": "Sign in to use Smart Add."}, 401)
+            return False
+        if not user_is_pro(user["id"]):
+            self.send_json(
+                {"error": "Smart Add and the browser extension are part of Antri Pro.", "upgrade": True},
+                402,
+            )
+            return False
+        return True
+
+    def handle_checkout(self):
+        cfg = stripe_config()
+        if not (cfg["secret"] and cfg["price"]):
+            self.send_json({"error": "Billing is not configured."}, 503)
+            return
+        user = self.authed_user()
+        if not user or not user.get("id"):
+            self.send_json({"error": "Sign in to upgrade."}, 401)
+            return
+        payload = self.read_json()
+        base = self.return_base(payload.get("returnUrl"))
+        data = {
+            "mode": "subscription",
+            "line_items[0][price]": cfg["price"],
+            "line_items[0][quantity]": "1",
+            "success_url": f"{base}?upgrade=success",
+            "cancel_url": f"{base}?upgrade=cancel",
+            "client_reference_id": user["id"],
+            "metadata[user_id]": user["id"],
+            "subscription_data[metadata][user_id]": user["id"],
+            "allow_promotion_codes": "true",
+        }
+        if user.get("email"):
+            data["customer_email"] = user["email"]
+        try:
+            session = stripe_api("checkout/sessions", cfg["secret"], data)
+        except HTTPError as error:
+            self.send_json({"error": f"Stripe rejected the request (HTTP {error.code})."}, 502)
+            return
+        except URLError:
+            self.send_json({"error": "Could not reach Stripe."}, 502)
+            return
+        self.send_json({"url": session.get("url")})
+
+    def handle_portal(self):
+        cfg = stripe_config()
+        if not cfg["secret"]:
+            self.send_json({"error": "Billing is not configured."}, 503)
+            return
+        user = self.authed_user()
+        if not user or not user.get("id"):
+            self.send_json({"error": "Sign in first."}, 401)
+            return
+        sub = get_subscription_row(user["id"])
+        customer = sub.get("stripe_customer_id") if sub else None
+        if not customer:
+            self.send_json({"error": "No subscription found for this account."}, 404)
+            return
+        payload = self.read_json()
+        base = self.return_base(payload.get("returnUrl"))
+        try:
+            portal = stripe_api(
+                "billing_portal/sessions",
+                cfg["secret"],
+                {"customer": customer, "return_url": base},
+            )
+        except (HTTPError, URLError):
+            self.send_json({"error": "Could not open the billing portal."}, 502)
+            return
+        self.send_json({"url": portal.get("url")})
+
+    def handle_stripe_webhook(self):
+        cfg = stripe_config()
+        length = int(self.headers.get("Content-Length", "0"))
+        body = self.rfile.read(length)
+        signature = self.headers.get("Stripe-Signature", "")
+        if not verify_stripe_signature(body, signature, cfg["webhook_secret"]):
+            self.send_json({"error": "Invalid signature."}, 400)
+            return
+        try:
+            event = json.loads(body.decode("utf-8"))
+        except ValueError:
+            self.send_json({"error": "Invalid payload."}, 400)
+            return
+        try:
+            handle_stripe_event(event, cfg)
+        except (HTTPError, URLError, ValueError):
+            # Transient downstream failure: 500 tells Stripe to retry later.
+            self.send_json({"error": "Could not record the event."}, 500)
+            return
+        self.send_json({"received": True})
 
 
 def fetch_page_text(url):
