@@ -78,6 +78,15 @@ def stripe_api(path, secret, data=None, method="POST"):
         return json.loads(response.read().decode("utf-8"))
 
 
+def stripe_error_message(error):
+    """Pull Stripe's human-readable error message out of an HTTPError body."""
+    try:
+        data = json.loads(error.read().decode("utf-8"))
+        return (data.get("error") or {}).get("message")
+    except (ValueError, AttributeError, OSError):
+        return None
+
+
 def supabase_get_user(access_token):
     """Validate a Supabase access token and return the user dict (or None)."""
     if not (SUPABASE_URL and SUPABASE_ANON_KEY and access_token):
@@ -444,7 +453,8 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             session = stripe_api("checkout/sessions", cfg["secret"], data)
         except HTTPError as error:
-            self.send_json({"error": f"Stripe rejected the request (HTTP {error.code})."}, 502)
+            message = stripe_error_message(error) or f"Stripe rejected the request (HTTP {error.code})."
+            self.send_json({"error": message}, 502)
             return
         except URLError:
             self.send_json({"error": "Could not reach Stripe."}, 502)
@@ -473,8 +483,12 @@ class Handler(SimpleHTTPRequestHandler):
                 cfg["secret"],
                 {"customer": customer, "return_url": base},
             )
-        except (HTTPError, URLError):
-            self.send_json({"error": "Could not open the billing portal."}, 502)
+        except HTTPError as error:
+            message = stripe_error_message(error) or "Could not open the billing portal."
+            self.send_json({"error": message}, 502)
+            return
+        except URLError:
+            self.send_json({"error": "Could not reach Stripe."}, 502)
             return
         self.send_json({"url": portal.get("url")})
 
