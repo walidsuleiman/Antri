@@ -446,6 +446,7 @@ class Handler(SimpleHTTPRequestHandler):
             "client_reference_id": user["id"],
             "metadata[user_id]": user["id"],
             "subscription_data[metadata][user_id]": user["id"],
+            "subscription_data[trial_period_days]": "3",
             "allow_promotion_codes": "true",
         }
         if user.get("email"):
