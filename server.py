@@ -154,6 +154,27 @@ def user_is_pro(user_id):
     return True
 
 
+def supabase_admin_enabled():
+    return bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
+
+
+def delete_auth_user(user_id):
+    """Delete a Supabase auth user via the Admin API (cascades their rows)."""
+    request = Request(
+        f"{SUPABASE_URL}/auth/v1/admin/users/{quote(user_id)}",
+        headers={
+            "apikey": SUPABASE_SERVICE_ROLE_KEY,
+            "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+        },
+        method="DELETE",
+    )
+    try:
+        with urlopen(request, timeout=15):
+            return True
+    except (HTTPError, URLError):
+        return False
+
+
 def verify_stripe_signature(payload, signature_header, secret):
     """Verify Stripe's `Stripe-Signature` header (t=...,v1=... HMAC-SHA256)."""
     if not (signature_header and secret):
@@ -305,6 +326,9 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if self.path == "/api/portal-session":
             self.handle_portal()
+            return
+        if self.path == "/api/delete-account":
+            self.handle_delete_account()
             return
         if self.path not in {"/api/extract-job", "/api/extract-page"}:
             self.send_json({"error": "Not found"}, 404)
@@ -492,6 +516,38 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json({"error": "Could not reach Stripe."}, 502)
             return
         self.send_json({"url": portal.get("url")})
+
+    def handle_delete_account(self):
+        if not supabase_admin_enabled():
+            self.send_json({"error": "Account deletion isn't available on this instance."}, 503)
+            return
+        user = self.authed_user()
+        if not user or not user.get("id"):
+            self.send_json({"error": "Sign in first."}, 401)
+            return
+        user_id = user["id"]
+
+        # Cancel any active Stripe subscription first (best-effort).
+        cfg = stripe_config()
+        sub = get_subscription_row(user_id)
+        subscription_id = sub.get("stripe_subscription_id") if sub else None
+        if subscription_id and cfg["secret"]:
+            try:
+                stripe_api(f"subscriptions/{subscription_id}", cfg["secret"], method="DELETE")
+            except (HTTPError, URLError):
+                pass
+
+        # Delete their data explicitly (deleting the auth user also cascades).
+        try:
+            supabase_service("DELETE", f"job_applications?user_id=eq.{quote(user_id)}")
+            supabase_service("DELETE", f"subscriptions?user_id=eq.{quote(user_id)}")
+        except (HTTPError, URLError):
+            pass
+
+        if not delete_auth_user(user_id):
+            self.send_json({"error": "Could not fully delete the account. Please contact support."}, 502)
+            return
+        self.send_json({"deleted": True})
 
     def handle_stripe_webhook(self):
         cfg = stripe_config()
