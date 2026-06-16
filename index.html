@@ -341,25 +341,31 @@
                 <p>Enter this in Gmail's "Add a forwarding address" dialog to confirm, then add the filter below.</p>
               </div>
 
+              <p class="email-steps-intro">Copy the address above, then set a one-time forwarding rule for your provider:</p>
               <div class="email-steps">
                 <div>
                   <h4>Gmail</h4>
                   <ol>
-                    <li>Settings → <strong>Forwarding and POP/IMAP</strong> → <strong>Add a forwarding address</strong> → paste the address above.</li>
-                    <li>Gmail emails a confirmation code to it. Click <strong>Check for code</strong> below, then enter it in Gmail.</li>
-                    <li>Create a <strong>filter</strong> (e.g. from recruiters/job boards) → <strong>Forward it to</strong> your Antri address.</li>
+                    <li>Open Gmail → click the <strong>⚙ gear</strong> → <strong>See all settings</strong> → the <strong>Forwarding and POP/IMAP</strong> tab.</li>
+                    <li>Click <strong>Add a forwarding address</strong>, paste your Antri address, then <strong>Next → Proceed</strong>.</li>
+                    <li>Gmail sends a confirmation code to Antri. Come back here and click <strong>Check for code</strong> — it appears above. Paste it into Gmail's dialog and click <strong>Verify</strong>.</li>
+                    <li>In Gmail's search bar, click the <strong>filter</strong> icon → set who to capture (e.g. <em>from</em> recruiters or job boards, or subjects like <em>interview</em>) → <strong>Create filter</strong>.</li>
+                    <li>Tick <strong>Forward it to</strong>, choose your Antri address, then <strong>Create filter</strong>. Done.</li>
                   </ol>
                 </div>
                 <div>
                   <h4>Outlook</h4>
                   <ol>
-                    <li>Settings → <strong>Mail → Rules</strong> → <strong>Add new rule</strong>.</li>
-                    <li>Pick a condition (e.g. specific senders/subjects) → action <strong>Forward to</strong> your Antri address.</li>
-                    <li>Save. No code needed for Outlook rules.</li>
+                    <li>Open Outlook → click the <strong>⚙ gear</strong> → <strong>Mail</strong> → <strong>Rules</strong>.</li>
+                    <li>Click <strong>Add new rule</strong> and give it a name like “Forward to Antri”.</li>
+                    <li>Add a condition (e.g. <em>Subject includes</em> “interview”, or <em>From</em> specific recruiters).</li>
+                    <li>Add the action <strong>Forward to</strong> and paste your Antri address.</li>
+                    <li>Click <strong>Save</strong>. No confirmation code is needed for Outlook.</li>
                   </ol>
                 </div>
               </div>
               <button class="ghost-button small" type="button" id="refreshEmailButton">Check for code</button>
+              <p class="email-footnote">Once a rule is set, Antri reads forwarded recruiter emails and updates the matching application's status, reply state, and notes automatically. Forward only job-related mail to keep your pipeline clean — Antri processes these emails to update your cards and does not store your inbox.</p>
             </div>
           </div>
         </section>

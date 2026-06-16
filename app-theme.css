@@ -696,11 +696,14 @@ select optgroup {
   color: var(--accent);
 }
 .email-verify p { color: var(--muted); font-size: 0.86rem; }
-.email-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0 16px; }
+.email-steps-intro { color: var(--muted); font-size: 0.9rem; margin: 22px 0 0; }
+.email-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 14px 0 16px; }
 .email-steps h4 { font-size: 0.95rem; margin-bottom: 8px; color: var(--ink); }
 .email-steps ol { margin: 0; padding-left: 18px; color: #c4ccd8; display: grid; gap: 8px; }
 .email-steps li { font-size: 0.88rem; line-height: 1.5; }
 .email-steps strong { color: var(--ink); }
+.email-steps em { color: var(--ink); font-style: normal; opacity: 0.85; }
+.email-footnote { color: var(--muted); font-size: 0.82rem; line-height: 1.55; margin: 14px 0 0; }
 @media (max-width: 680px) { .email-steps { grid-template-columns: 1fr; } }
 .upgrade-close {
   position: absolute; top: 16px; right: 16px;
