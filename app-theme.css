@@ -643,6 +643,65 @@ select optgroup {
 @media (max-width: 680px) {
   .kanban-col { flex-basis: 80%; min-width: 80%; }
 }
+
+/* --------------------------------------------------------- email sync */
+.email-sync {
+  max-width: 720px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.03), rgba(255, 255, 255, 0.012));
+  padding: 26px;
+}
+.email-sync-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 20px; }
+.email-logos { display: flex; gap: 8px; flex: none; }
+.email-logo {
+  width: 46px; height: 46px;
+  display: grid; place-items: center;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35), inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+.email-logo svg { width: 28px; height: 28px; }
+.email-sync-head h3 { font-size: 1.12rem; }
+.email-sync-head p { color: var(--muted); font-size: 0.94rem; margin-top: 6px; }
+.email-label {
+  font-size: 0.78rem; letter-spacing: 0.08em; text-transform: uppercase;
+  color: #69707e; margin: 22px 0 8px;
+}
+.email-address-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.email-address-row code {
+  flex: 1; min-width: 220px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--accent);
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.92rem;
+  word-break: break-all;
+}
+.email-verify {
+  margin-top: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--accent-line);
+  border-radius: 12px;
+  background: var(--accent-soft);
+  display: grid; gap: 8px;
+}
+.email-verify strong { color: var(--ink); }
+.email-verify code {
+  justify-self: start;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 1.35rem; font-weight: 700; letter-spacing: 0.14em;
+  color: var(--accent);
+}
+.email-verify p { color: var(--muted); font-size: 0.86rem; }
+.email-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin: 24px 0 16px; }
+.email-steps h4 { font-size: 0.95rem; margin-bottom: 8px; color: var(--ink); }
+.email-steps ol { margin: 0; padding-left: 18px; color: #c4ccd8; display: grid; gap: 8px; }
+.email-steps li { font-size: 0.88rem; line-height: 1.5; }
+.email-steps strong { color: var(--ink); }
+@media (max-width: 680px) { .email-steps { grid-template-columns: 1fr; } }
 .upgrade-close {
   position: absolute; top: 16px; right: 16px;
   width: 34px; height: 34px;

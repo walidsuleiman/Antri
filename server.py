@@ -10,6 +10,7 @@ import html as html_lib
 import json
 import os
 import re
+import secrets
 import sys
 
 
@@ -27,6 +28,10 @@ RENDER_HOST = "antri.onrender.com"
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
 SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+
+# Inbound email sync (Gmail/Outlook auto-forward -> Postmark -> /api/inbound-email)
+FORWARD_DOMAIN = os.environ.get("ANTRI_FORWARD_DOMAIN", "inbox.antri.xyz")
+INBOUND_EMAIL_SECRET = os.environ.get("INBOUND_EMAIL_SECRET", "")
 
 
 def stripe_config():
@@ -173,6 +178,159 @@ def delete_auth_user(user_id):
             return True
     except (HTTPError, URLError):
         return False
+
+
+# --------------------------------------------------------------------------
+# Inbound email sync: forwarded recruiter emails update the matching application
+# --------------------------------------------------------------------------
+INTERVIEW_HINTS = (
+    "interview", "schedule a call", "schedule a time", "set up a time", "availability",
+    "phone screen", "next steps", "move forward to", "would love to chat", "meet with the team",
+)
+REJECTION_HINTS = (
+    "unfortunately", "not moving forward", "other candidates", "we regret", "regret to inform",
+    "will not be moving", "decided not to", "no longer considering", "position has been filled",
+    "not be proceeding", "wish you the best",
+)
+OFFER_HINTS = ("pleased to offer", "extend an offer", "offer of employment", "we'd like to offer")
+
+
+def email_sync_enabled():
+    """Email sync is active only once the inbound provider secret is configured."""
+    return bool(INBOUND_EMAIL_SECRET and SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
+
+
+def get_or_create_email_connection(user_id):
+    try:
+        rows = supabase_service("GET", f"email_connections?user_id=eq.{quote(user_id)}&select=*&limit=1")
+    except (HTTPError, URLError, ValueError):
+        rows = None
+    if rows:
+        return rows[0]
+    row = {"user_id": user_id, "token": secrets.token_hex(8), "updated_at": now_iso()}
+    try:
+        created = supabase_service("POST", "email_connections", body=[row], prefer="return=representation")
+        if created:
+            return created[0]
+    except (HTTPError, URLError, ValueError):
+        pass
+    return row
+
+
+def write_email_connection(user_id, fields):
+    body = dict(fields)
+    body["updated_at"] = now_iso()
+    try:
+        supabase_service("PATCH", f"email_connections?user_id=eq.{quote(user_id)}", body=body)
+    except (HTTPError, URLError, ValueError):
+        pass
+
+
+def connection_address(token):
+    return f"u-{token}@{FORWARD_DOMAIN}"
+
+
+def token_from_address(address):
+    if not address or "@" not in address:
+        return None
+    local = address.split("@", 1)[0].lower().split("+", 1)[0]
+    return local[2:] if local.startswith("u-") else None
+
+
+def find_connection_by_token(token):
+    if not token:
+        return None
+    try:
+        rows = supabase_service("GET", f"email_connections?token=eq.{quote(token)}&select=*&limit=1")
+    except (HTTPError, URLError, ValueError):
+        return None
+    return rows[0] if rows else None
+
+
+def strip_html(html):
+    if not html:
+        return ""
+    parser = VisibleTextParser()
+    try:
+        parser.feed(html)
+    except Exception:
+        return ""
+    return parser.text()
+
+
+def extract_forwarding_code(sender, subject, body):
+    """Detect a Gmail/Outlook forwarding-verification email and pull out its code."""
+    sender_l = (sender or "").lower()
+    subject_l = (subject or "").lower()
+    looks_like_verification = (
+        "forwarding-noreply@google.com" in sender_l
+        or ("forward" in subject_l and ("confirm" in subject_l or "verif" in subject_l))
+        or "confirmation code" in (body or "").lower()
+    )
+    if not looks_like_verification:
+        return None
+    match = re.search(r"\b(\d{6,9})\b", f"{subject} {body}")
+    return match.group(1) if match else None
+
+
+def classify_email(subject, body):
+    text = f"{subject}\n{body}".lower()
+    if any(hint in text for hint in OFFER_HINTS):
+        return "Offer"
+    if any(hint in text for hint in REJECTION_HINTS):
+        return "Rejected"
+    if any(hint in text for hint in INTERVIEW_HINTS):
+        return "Interviewing"
+    return None
+
+
+def match_application(user_id, sender_email, subject):
+    try:
+        rows = supabase_service(
+            "GET",
+            f"job_applications?user_id=eq.{quote(user_id)}"
+            "&select=id,company,url,status,notes"
+            "&status=not.in.(Rejected,Withdrawn)&order=created_at.desc",
+        )
+    except (HTTPError, URLError, ValueError):
+        return None
+    if not rows:
+        return None
+
+    domain = sender_email.split("@", 1)[1].lower() if "@" in (sender_email or "") else ""
+    domain_core = domain.split(".")[0] if domain else ""
+    subject_l = (subject or "").lower()
+
+    best, best_score = None, 0
+    for row in rows:
+        company = (row.get("company") or "").lower().strip()
+        url = (row.get("url") or "").lower()
+        score = 0
+        if domain and url and domain in url:
+            score += 3
+        if domain_core and company and (domain_core in company or company.split(" ")[0] in domain):
+            score += 2
+        if company and len(company) > 2 and company in subject_l:
+            score += 2
+        if score > best_score:
+            best, best_score = row, score
+    return best if best_score > 0 else None
+
+
+def apply_email_to_application(app, sender, subject, body):
+    new_status = classify_email(subject, body)
+    today = datetime.now(timezone.utc).date().isoformat()
+    note_line = f"[{today}] Email from {sender or 'recruiter'}: {subject or '(no subject)'}".strip()
+    existing = app.get("notes") or ""
+    notes = (f"{note_line}\n\n{existing}" if existing else note_line).strip()[:8000]
+    patch = {"notes": notes, "heard_back": True, "updated_at": now_iso()}
+    if new_status:
+        patch["status"] = new_status
+    try:
+        supabase_service("PATCH", f"job_applications?id=eq.{quote(app['id'])}", body=patch)
+    except (HTTPError, URLError, ValueError):
+        pass
+    return new_status
 
 
 def verify_stripe_signature(payload, signature_header, secret):
@@ -329,6 +487,12 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if self.path == "/api/delete-account":
             self.handle_delete_account()
+            return
+        if self.path == "/api/email-connection":
+            self.handle_email_connection()
+            return
+        if self.path.split("?")[0] == "/api/inbound-email":
+            self.handle_inbound_email()
             return
         if self.path not in {"/api/extract-job", "/api/extract-page"}:
             self.send_json({"error": "Not found"}, 404)
@@ -548,6 +712,62 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_json({"error": "Could not fully delete the account. Please contact support."}, 502)
             return
         self.send_json({"deleted": True})
+
+    def handle_email_connection(self):
+        if not email_sync_enabled():
+            self.send_json({"error": "Email sync isn't enabled yet."}, 503)
+            return
+        user = self.authed_user()
+        if not user or not user.get("id"):
+            self.send_json({"error": "Sign in first."}, 401)
+            return
+        conn = get_or_create_email_connection(user["id"])
+        self.send_json({
+            "address": connection_address(conn.get("token")),
+            "verificationCode": conn.get("verification_code"),
+            "verificationFrom": conn.get("verification_from"),
+        })
+
+    def handle_inbound_email(self):
+        if not email_sync_enabled():
+            self.send_json({"error": "Not configured"}, 503)
+            return
+        # Secret check (Postmark webhook URL carries ?key=...). Required.
+        key = parse_qs(urlparse(self.path).query).get("key", [""])[0]
+        if key != INBOUND_EMAIL_SECRET:
+            self.send_json({"error": "Unauthorized"}, 401)
+            return
+        try:
+            payload = self.read_json()
+        except (ValueError, json.JSONDecodeError):
+            self.send_json({"error": "Invalid payload"}, 400)
+            return
+
+        recipient = payload.get("OriginalRecipient") or ""
+        if not recipient:
+            to_full = payload.get("ToFull") or []
+            recipient = to_full[0].get("Email", "") if to_full else payload.get("To", "")
+        conn = find_connection_by_token(token_from_address(recipient))
+        # Always 200 so the provider doesn't retry on unmatched mail.
+        if not conn:
+            self.send_json({"received": True, "matched": False})
+            return
+
+        user_id = conn["user_id"]
+        sender = (payload.get("FromFull") or {}).get("Email") or payload.get("From", "")
+        subject = payload.get("Subject", "")
+        body = payload.get("TextBody") or strip_html(payload.get("HtmlBody", ""))
+
+        code = extract_forwarding_code(sender, subject, body)
+        if code:
+            write_email_connection(user_id, {"verification_code": code, "verification_from": sender})
+            self.send_json({"received": True, "verification": True})
+            return
+
+        app = match_application(user_id, sender, subject)
+        status = apply_email_to_application(app, sender, subject, body) if app else None
+        write_email_connection(user_id, {"verification_code": None, "last_event_at": now_iso()})
+        self.send_json({"received": True, "matched": bool(app), "status": status})
 
     def handle_stripe_webhook(self):
         cfg = stripe_config()

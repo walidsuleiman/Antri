@@ -292,43 +292,75 @@
         <section id="integrationsView" class="view" aria-label="Integrations">
           <div class="section-head">
             <div>
-              <h2>Integrations</h2>
-              <p>Email connectors to automate your tracking</p>
+              <h2>Email sync</h2>
+              <p>Auto-forward recruiter emails to Antri and we'll update the matching application</p>
             </div>
           </div>
-          <div class="integration-grid">
-            <article class="integration-card">
-              <div class="integration-logo" aria-hidden="true">
-                <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                  <path fill="#4caf50" d="M45 16.2l-5 2.75-5 4.75L35 40h7c1.657 0 3-1.343 3-3V16.2z"/>
-                  <path fill="#1e88e5" d="M3 16.2l3.614 1.71L13 23.7V40H6c-1.657 0-3-1.343-3-3V16.2z"/>
-                  <polygon fill="#e53935" points="35,11.2 24,19.45 13,11.2 12,17 13,23.7 24,31.95 35,23.7 36,17"/>
-                  <path fill="#c62828" d="M3 12.298V16.2l10 7.5V11.2L9.876 8.859C9.132 8.301 8.228 8 7.298 8 4.924 8 3 9.924 3 12.298z"/>
-                  <path fill="#fbc02d" d="M45 12.298V16.2l-10 7.5V11.2l3.124-2.341C38.868 8.301 39.772 8 40.702 8 43.076 8 45 9.924 45 12.298z"/>
-                </svg>
+
+          <div class="email-sync">
+            <div class="email-sync-head">
+              <div class="email-logos" aria-hidden="true">
+                <span class="email-logo">
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#4caf50" d="M45 16.2l-5 2.75-5 4.75L35 40h7c1.657 0 3-1.343 3-3V16.2z"/>
+                    <path fill="#1e88e5" d="M3 16.2l3.614 1.71L13 23.7V40H6c-1.657 0-3-1.343-3-3V16.2z"/>
+                    <polygon fill="#e53935" points="35,11.2 24,19.45 13,11.2 12,17 13,23.7 24,31.95 35,23.7 36,17"/>
+                    <path fill="#c62828" d="M3 12.298V16.2l10 7.5V11.2L9.876 8.859C9.132 8.301 8.228 8 7.298 8 4.924 8 3 9.924 3 12.298z"/>
+                    <path fill="#fbc02d" d="M45 12.298V16.2l-10 7.5V11.2l3.124-2.341C38.868 8.301 39.772 8 40.702 8 43.076 8 45 9.924 45 12.298z"/>
+                  </svg>
+                </span>
+                <span class="email-logo">
+                  <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+                    <path fill="#0a2767" d="M44 24l-9-5v10z"/>
+                    <rect x="25" y="14" width="19" height="20" rx="1.5" fill="#28a8ea"/>
+                    <path fill="#0078d4" d="M25 14h19v3l-9.5 6L25 17z"/>
+                    <rect x="4" y="9" width="24" height="30" rx="3.5" fill="#0364b8"/>
+                    <ellipse cx="16" cy="24" rx="7.4" ry="8.2" fill="none" stroke="#fff" stroke-width="3.4"/>
+                  </svg>
+                </span>
               </div>
               <div>
-                <h3>Gmail</h3>
-                <p>Detect recruiter replies, parse interview invites, and attach email threads to applications.</p>
+                <h3>Connect Gmail or Outlook</h3>
+                <p>Set a one-time auto-forward rule. Antri reads forwarded recruiter emails and updates the matching application's status and notes — automatically.</p>
               </div>
-              <span class="soon">Coming soon</span>
-            </article>
-            <article class="integration-card">
-              <div class="integration-logo" aria-hidden="true">
-                <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
-                  <path fill="#0a2767" d="M44 24l-9-5v10z"/>
-                  <rect x="25" y="14" width="19" height="20" rx="1.5" fill="#28a8ea"/>
-                  <path fill="#0078d4" d="M25 14h19v3l-9.5 6L25 17z"/>
-                  <rect x="4" y="9" width="24" height="30" rx="3.5" fill="#0364b8"/>
-                  <ellipse cx="16" cy="24" rx="7.4" ry="8.2" fill="none" stroke="#fff" stroke-width="3.4"/>
-                </svg>
+            </div>
+
+            <button class="primary-button" type="button" id="connectEmailButton">Get my forwarding address</button>
+            <output id="emailSyncStatus" class="sync-status" aria-live="polite"></output>
+
+            <div id="emailSetup" hidden>
+              <p class="email-label">Your unique forwarding address</p>
+              <div class="email-address-row">
+                <code id="forwardAddress"></code>
+                <button class="ghost-button small" type="button" id="copyAddressButton">Copy</button>
               </div>
-              <div>
-                <h3>Outlook</h3>
-                <p>Sync hiring emails, calendar follow-ups, and company contacts from Microsoft accounts.</p>
+
+              <div id="emailVerifyNotice" class="email-verify" hidden>
+                <strong>Gmail confirmation code received</strong>
+                <code id="emailVerifyCode"></code>
+                <p>Enter this in Gmail's "Add a forwarding address" dialog to confirm, then add the filter below.</p>
               </div>
-              <span class="soon">Coming soon</span>
-            </article>
+
+              <div class="email-steps">
+                <div>
+                  <h4>Gmail</h4>
+                  <ol>
+                    <li>Settings → <strong>Forwarding and POP/IMAP</strong> → <strong>Add a forwarding address</strong> → paste the address above.</li>
+                    <li>Gmail emails a confirmation code to it. Click <strong>Check for code</strong> below, then enter it in Gmail.</li>
+                    <li>Create a <strong>filter</strong> (e.g. from recruiters/job boards) → <strong>Forward it to</strong> your Antri address.</li>
+                  </ol>
+                </div>
+                <div>
+                  <h4>Outlook</h4>
+                  <ol>
+                    <li>Settings → <strong>Mail → Rules</strong> → <strong>Add new rule</strong>.</li>
+                    <li>Pick a condition (e.g. specific senders/subjects) → action <strong>Forward to</strong> your Antri address.</li>
+                    <li>Save. No code needed for Outlook rules.</li>
+                  </ol>
+                </div>
+              </div>
+              <button class="ghost-button small" type="button" id="refreshEmailButton">Check for code</button>
+            </div>
           </div>
         </section>
       </main>

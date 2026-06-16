@@ -121,6 +121,14 @@ const elements = {
   deleteConfirmInput: document.getElementById("deleteConfirmInput"),
   deleteConfirmButton: document.getElementById("deleteConfirmButton"),
   deleteStatus: document.getElementById("deleteStatus"),
+  connectEmailButton: document.getElementById("connectEmailButton"),
+  emailSyncStatus: document.getElementById("emailSyncStatus"),
+  emailSetup: document.getElementById("emailSetup"),
+  forwardAddress: document.getElementById("forwardAddress"),
+  copyAddressButton: document.getElementById("copyAddressButton"),
+  emailVerifyNotice: document.getElementById("emailVerifyNotice"),
+  emailVerifyCode: document.getElementById("emailVerifyCode"),
+  refreshEmailButton: document.getElementById("refreshEmailButton"),
   template: document.getElementById("jobCardTemplate")
 };
 
@@ -230,6 +238,10 @@ function bindEvents() {
     elements.deleteConfirmButton.disabled = elements.deleteConfirmInput.value.trim().toUpperCase() !== "DELETE";
   });
   elements.deleteConfirmButton.addEventListener("click", performDeleteAccount);
+
+  elements.connectEmailButton.addEventListener("click", () => connectEmail(false));
+  elements.refreshEmailButton.addEventListener("click", () => connectEmail(true));
+  elements.copyAddressButton.addEventListener("click", copyForwardAddress);
 
   document.addEventListener("click", (event) => {
     if (!elements.accountMenu.contains(event.target)) {
@@ -683,6 +695,63 @@ function handleUpgradeReturn() {
     }
   };
   setTimeout(poll, 1200);
+}
+
+async function connectEmail(isRefresh) {
+  elements.emailSyncStatus.textContent = isRefresh ? "Checking…" : "Setting up your forwarding address…";
+  elements.emailSyncStatus.dataset.tone = "";
+  try {
+    const session = await getActiveSession();
+    const response = await fetch("/api/email-connection", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({})
+    });
+    if (response.status === 503) {
+      elements.emailSyncStatus.textContent = "Email sync is coming soon to your account — check back shortly.";
+      elements.emailSyncStatus.dataset.tone = "";
+      return;
+    }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.address) {
+      throw new Error(payload.error || "Email sync isn't available yet.");
+    }
+
+    elements.forwardAddress.textContent = payload.address;
+    elements.emailSetup.hidden = false;
+    elements.connectEmailButton.textContent = "Forwarding address ready";
+    elements.connectEmailButton.disabled = true;
+
+    if (payload.verificationCode) {
+      elements.emailVerifyCode.textContent = payload.verificationCode;
+      elements.emailVerifyNotice.hidden = false;
+      elements.emailSyncStatus.textContent = "Confirmation code received — enter it in Gmail.";
+      elements.emailSyncStatus.dataset.tone = "success";
+    } else if (isRefresh) {
+      elements.emailVerifyNotice.hidden = true;
+      elements.emailSyncStatus.textContent = "No new confirmation code yet. Add the address in Gmail, then check again.";
+    } else {
+      elements.emailSyncStatus.textContent = "";
+    }
+  } catch (error) {
+    elements.emailSyncStatus.textContent = error.message;
+    elements.emailSyncStatus.dataset.tone = "error";
+  }
+}
+
+async function copyForwardAddress() {
+  const address = elements.forwardAddress.textContent.trim();
+  if (!address) return;
+  try {
+    await navigator.clipboard.writeText(address);
+    elements.copyAddressButton.textContent = "Copied";
+    setTimeout(() => { elements.copyAddressButton.textContent = "Copy"; }, 1500);
+  } catch (error) {
+    elements.emailSyncStatus.textContent = "Couldn't copy — select and copy the address manually.";
+  }
 }
 
 function openDeleteModal() {
