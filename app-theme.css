@@ -570,6 +570,79 @@ select optgroup {
 }
 .danger-solid:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 34px rgba(220, 38, 38, 0.55); }
 .danger-solid:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* --------------------------------------------------------- kanban board */
+.kanban {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding-bottom: 14px;
+  scroll-snap-type: x proximity;
+}
+.kanban-col {
+  flex: 0 0 266px;
+  min-width: 266px;
+  display: flex;
+  flex-direction: column;
+  scroll-snap-align: start;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.018);
+  transition: border-color 0.2s var(--ease-app), background 0.2s var(--ease-app);
+}
+.kanban-col.drop-target {
+  border-color: var(--accent-line);
+  background: var(--accent-soft);
+}
+.kanban-col-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+}
+.kanban-col-title { font-weight: 600; font-size: 0.92rem; letter-spacing: -0.01em; }
+.kanban-col-count {
+  min-width: 24px;
+  text-align: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.kanban-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  min-height: 110px;
+  flex: 1;
+}
+.kanban-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
+  padding: 13px 14px;
+  cursor: grab;
+  transition: transform 0.15s var(--ease-app), border-color 0.2s var(--ease-app), box-shadow 0.2s var(--ease-app);
+}
+.kanban-card:hover { border-color: var(--line-strong); box-shadow: 0 10px 26px rgba(0, 0, 0, 0.35); }
+.kanban-card:active { cursor: grabbing; }
+.kanban-card.dragging { opacity: 0.4; }
+.kanban-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.kanban-card-top strong { font-size: 0.95rem; letter-spacing: -0.01em; }
+.kanban-card-company { margin: 7px 0 0; color: var(--muted); font-size: 0.85rem; }
+.kanban-card-meta { margin: 8px 0 0; color: var(--accent); font-size: 0.78rem; font-weight: 540; }
+
+@media (max-width: 680px) {
+  .kanban-col { flex-basis: 80%; min-width: 80%; }
+}
 .upgrade-close {
   position: absolute; top: 16px; right: 16px;
   width: 34px; height: 34px;
