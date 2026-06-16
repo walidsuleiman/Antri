@@ -55,7 +55,10 @@
           </form>
 
           <output id="authStatus" class="auth-status" aria-live="polite"></output>
-          <a class="auth-privacy-link" href="privacy.html">Privacy</a>
+          <div class="auth-legal-links">
+            <a href="privacy.html">Privacy</a>
+            <a href="terms.html">Terms</a>
+          </div>
         </div>
 
         <section class="auth-preview" aria-label="Application tracking preview">
@@ -171,6 +174,7 @@
                 <div class="account-plan" id="accountPlan"></div>
                 <button class="account-action plan-action" type="button" id="planActionButton" role="menuitem" hidden></button>
                 <a class="account-action" href="privacy.html" role="menuitem">Privacy policy</a>
+                <a class="account-action" href="terms.html" role="menuitem">Terms of service</a>
                 <button class="account-action" type="button" id="signOutButton" role="menuitem">Sign out</button>
               </div>
             </div>
@@ -456,7 +460,7 @@
       </ul>
       <button class="primary-button" type="button" id="upgradeCheckout">Start 3-day free trial</button>
       <output id="upgradeStatus" class="upgrade-status" aria-live="polite"></output>
-      <p class="upgrade-fine">Secure checkout and billing handled by Stripe.</p>
+      <p class="upgrade-fine">Secure checkout via Stripe. By continuing you agree to our <a href="terms.html" target="_blank" rel="noreferrer">Terms</a> &amp; <a href="privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.</p>
     </div>
 
     <template id="jobCardTemplate">

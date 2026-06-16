@@ -510,6 +510,8 @@ select optgroup {
 .upgrade-status { display: block; min-height: 1.2em; margin-top: 10px; text-align: center; color: var(--accent); font-size: 0.85rem; }
 .upgrade-status:empty { display: none; }
 .upgrade-fine { margin-top: 12px; text-align: center; color: #69707e; font-size: 0.78rem; }
+.upgrade-fine a { color: var(--muted); text-decoration: underline; }
+.upgrade-fine a:hover { color: var(--accent); }
 .upgrade-close {
   position: absolute; top: 16px; right: 16px;
   width: 34px; height: 34px;

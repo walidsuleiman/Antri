@@ -3,63 +3,165 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Antri Privacy Policy</title>
+    <title>Privacy Policy — Antri</title>
+    <meta name="description" content="How Antri collects, uses, and protects your data.">
+    <meta name="theme-color" content="#05060a">
     <link rel="icon" href="assets/antri-mark.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="privacy.css">
   </head>
   <body>
-    <main class="privacy-page">
-      <header>
+    <main class="legal-page">
+      <nav class="legal-nav">
         <a class="brand" href="index.html">
           <img src="assets/antri-mark.svg" alt="">
           <span>Antri</span>
         </a>
-        <p>Privacy Policy</p>
-        <h1>How Antri handles job-search data.</h1>
-        <time datetime="2026-05-22">Effective May 22, 2026</time>
+        <span class="spacer"></span>
+        <a class="nav-link" href="terms.html">Terms</a>
+        <a class="nav-link" href="index.html">Back to Antri</a>
+      </nav>
+
+      <header class="legal-head">
+        <p class="eyebrow">Privacy Policy</p>
+        <h1>Your data, handled plainly.</h1>
+        <p class="meta">Effective June 15, 2026 · Last updated June 15, 2026</p>
+        <p class="legal-intro">This policy explains what Antri collects, why, who we share it with, and the controls you have. We keep it short and specific on purpose.</p>
       </header>
 
-      <section>
-        <h2>What Antri is</h2>
-        <p>Antri is a job application tracker. The Antri website stores application records for signed-in users, and the Antri Job Saver Chrome extension helps a user create a draft from a job posting they choose to save.</p>
+      <div class="legal-toc">
+        <strong>Contents</strong>
+        <ol>
+          <li><a href="#about">Who we are</a></li>
+          <li><a href="#collect">What we collect</a></li>
+          <li><a href="#use">How we use it</a></li>
+          <li><a href="#extension">The browser extension</a></li>
+          <li><a href="#ai">AI extraction</a></li>
+          <li><a href="#subprocessors">Service providers</a></li>
+          <li><a href="#payments">Payments</a></li>
+          <li><a href="#google">Google user data</a></li>
+          <li><a href="#storage">Cookies &amp; local storage</a></li>
+          <li><a href="#retention">Retention</a></li>
+          <li><a href="#rights">Your rights &amp; choices</a></li>
+          <li><a href="#security">Security</a></li>
+          <li><a href="#children">Children</a></li>
+          <li><a href="#changes">Changes</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ol>
+      </div>
+
+      <section class="legal-section" id="about">
+        <h2>1. Who we are</h2>
+        <p>Antri is a job-search workspace for tracking applications, follow-ups, and replies, available at <a href="https://antri.xyz">antri.xyz</a>. Antri is also open-source software you can self-host; this policy covers the hosted service we operate. If you self-host Antri, you are the data controller for your own instance.</p>
       </section>
 
-      <section>
-        <h2>Data you provide</h2>
-        <p>Antri stores the application details you enter or save, such as job role, company, location, dates, status, follow-up details, notes, source, job URL, and contact information. Account authentication may use email/password or Google sign-in.</p>
+      <section class="legal-section" id="collect">
+        <h2>2. What we collect</h2>
+        <p>We collect only what's needed to run the service:</p>
+        <ul>
+          <li><strong>Account data</strong> — your email address, and (if you use Google sign-in) basic Google profile/authentication details. Authentication is handled by our provider, Supabase.</li>
+          <li><strong>Application data</strong> — the job-tracking records you create: role, company, location, dates, status, priority, compensation, source, job URL, contacts, follow-up dates, and notes.</li>
+          <li><strong>Job-posting content</strong> — when you use Smart Add or the browser extension, the page URL, title, and visible text of a posting you choose to save.</li>
+          <li><strong>Payment data</strong> — if you subscribe to Antri Pro, your subscription status and billing identifiers. Card details are entered directly with Stripe; <strong>we never see or store your full card number.</strong></li>
+          <li><strong>Operational data</strong> — basic logs and error diagnostics needed to keep the service running and secure.</li>
+        </ul>
       </section>
 
-      <section>
-        <h2>Chrome extension data</h2>
-        <p>The Antri Job Saver extension only reads the active web page after you click its Save button. For that chosen page, it may collect the job page URL, page title, visible job-page text, and structured job posting data exposed by the page so Antri can create a draft application record.</p>
-        <p>The extension sends that selected page data over HTTPS to Antri's extraction service. Antri may send job-posting text to an AI extraction provider to turn it into structured application fields. The draft is then opened in Antri for you to review before saving.</p>
+      <section class="legal-section" id="use">
+        <h2>3. How we use it</h2>
+        <p>We use the data above to authenticate your account, store and sync your application records, extract job-posting details when you ask us to, show your tracking views and insights, send service emails you've enabled (such as follow-up digests), process subscriptions, diagnose failures, and protect the service from abuse.</p>
+        <div class="callout"><p>We do <strong>not</strong> sell your data, and we do <strong>not</strong> use your application data or extension page data for advertising.</p></div>
       </section>
 
-      <section>
-        <h2>How data is used</h2>
-        <p>Antri uses data to authenticate accounts, sync application records, extract job-posting details after a user requests that action, display application tracking views, diagnose service failures, and protect the service from abuse.</p>
-        <p>Antri does not sell Chrome extension page data and does not use extension page data for advertising.</p>
+      <section class="legal-section" id="extension">
+        <h2>4. The browser extension</h2>
+        <p>The Antri Job Saver extension only reads the active web page <em>after you click Save</em>. For that page it may collect the URL, title, visible job text, and structured job-posting data, and send it over HTTPS to Antri to build a draft you review before saving.</p>
+        <p>To verify your subscription, the extension reads your own signed-in Antri session token from antri.xyz and sends it with the request. It does not run on, read, or transmit data from any other website, and it does not scan your browsing activity.</p>
       </section>
 
-      <section>
-        <h2>Service providers</h2>
-        <p>Antri relies on service providers for hosting, authentication, database storage, and AI-assisted extraction. Those providers process data only as needed to operate the Antri service and its requested features.</p>
+      <section class="legal-section" id="ai">
+        <h2>5. AI extraction</h2>
+        <p>When AI extraction is enabled, the text of a job posting you choose to process may be sent to our AI provider (OpenAI) to convert it into structured fields. This happens only for postings you actively submit. AI output can be wrong — you always review the draft before it is saved.</p>
       </section>
 
-      <section>
-        <h2>Google data</h2>
-        <p>If you choose Google sign-in, Antri uses Google authentication information needed to create and access your account. Antri's use and transfer of information received from Google APIs will adhere to the Chrome Web Store User Data Policy, including the Limited Use requirements.</p>
+      <section class="legal-section" id="subprocessors">
+        <h2>6. Service providers</h2>
+        <p>We rely on a small set of providers, each processing data only as needed to operate Antri:</p>
+        <table class="legal-table">
+          <thead><tr><th>Provider</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td>Supabase</td><td>Account authentication and database storage of your application records.</td></tr>
+            <tr><td>Stripe</td><td>Subscription billing and payment processing.</td></tr>
+            <tr><td>OpenAI</td><td>AI extraction of job-posting text you submit.</td></tr>
+            <tr><td>Render</td><td>Application hosting.</td></tr>
+            <tr><td>Email provider</td><td>Sending service emails such as follow-up digests (when enabled).</td></tr>
+            <tr><td>Google</td><td>Optional Google sign-in.</td></tr>
+          </tbody>
+        </table>
       </section>
 
-      <section>
-        <h2>Your choices</h2>
-        <p>You choose whether to enter job application records and whether to run the browser saver on a page. You can edit or delete application records inside Antri. You can remove the extension from Chrome at any time.</p>
+      <section class="legal-section" id="payments">
+        <h2>7. Payments</h2>
+        <p>Antri Pro subscriptions are billed through Stripe. When you subscribe, you enter your payment details directly with Stripe and they are processed under Stripe's terms and privacy policy. Antri stores only your subscription status and the identifiers needed to manage your plan (for example, a Stripe customer ID). See our <a href="terms.html">Terms</a> for billing, trial, and cancellation details.</p>
       </section>
 
-      <section>
-        <h2>Contact</h2>
-        <p>For privacy questions during Antri's beta, contact the Antri operator through the contact channel provided with your beta access.</p>
+      <section class="legal-section" id="google">
+        <h2>8. Google user data</h2>
+        <p>If you use Google sign-in, Antri uses the Google authentication information needed to create and access your account. Antri's use and transfer of information received from Google APIs adheres to the <a href="https://developer.chrome.com/docs/webstore/program-policies/limited-use/">Chrome Web Store User Data Policy</a>, including its Limited Use requirements. We do not use Google user data for advertising and do not sell it.</p>
       </section>
+
+      <section class="legal-section" id="storage">
+        <h2>9. Cookies &amp; local storage</h2>
+        <p>Antri uses your browser's local storage to keep you signed in (your session token) and to remember some preferences. We do not use third-party advertising or tracking cookies. The browser extension stores your session token locally so it can authenticate your saves.</p>
+      </section>
+
+      <section class="legal-section" id="retention">
+        <h2>10. Retention</h2>
+        <p>We keep your account and application data for as long as your account is active. When you delete your account, we delete your application records and account, and cancel any active subscription. Some records may persist briefly in encrypted backups or where retention is required for legal, tax, or fraud-prevention reasons (for example, payment records held by Stripe).</p>
+      </section>
+
+      <section class="legal-section" id="rights">
+        <h2>11. Your rights &amp; choices</h2>
+        <ul>
+          <li><strong>Access &amp; export</strong> — export all of your application data at any time as JSON or CSV from inside Antri.</li>
+          <li><strong>Correct</strong> — edit any application record directly.</li>
+          <li><strong>Delete</strong> — delete individual records, or delete your entire account and data from your account menu (Account → Delete account).</li>
+          <li><strong>Unsubscribe</strong> — turn off or unsubscribe from service emails such as the follow-up digest.</li>
+          <li><strong>Remove the extension</strong> — uninstall the Chrome extension at any time.</li>
+        </ul>
+        <p>Depending on where you live, you may have additional rights (such as under GDPR or CCPA) to access, correct, delete, or restrict processing of your data. Contact us to exercise them.</p>
+      </section>
+
+      <section class="legal-section" id="security">
+        <h2>12. Security</h2>
+        <p>Data is transmitted over HTTPS and stored with per-user access controls so you can only read and write your own records. No system is perfectly secure, but we take reasonable measures to protect your data and limit who and what can access it.</p>
+      </section>
+
+      <section class="legal-section" id="children">
+        <h2>13. Children</h2>
+        <p>Antri is not directed to children under 16, and we do not knowingly collect data from them. If you believe a child has provided us data, contact us and we will delete it.</p>
+      </section>
+
+      <section class="legal-section" id="changes">
+        <h2>14. Changes</h2>
+        <p>We may update this policy as Antri evolves. We'll change the "last updated" date above, and for material changes we'll provide a more prominent notice. Continued use after an update means you accept the revised policy.</p>
+      </section>
+
+      <section class="legal-section" id="contact">
+        <h2>15. Contact</h2>
+        <p>Questions about privacy or your data? Email <a href="mailto:me@walidsuleiman.com">me@walidsuleiman.com</a>.</p>
+      </section>
+
+      <footer class="legal-foot">
+        <span>© 2026 Antri</span>
+        <span class="links">
+          <a href="terms.html">Terms</a>
+          <a href="index.html">Home</a>
+          <a href="mailto:me@walidsuleiman.com">Contact</a>
+        </span>
+      </footer>
     </main>
   </body>
 </html>
