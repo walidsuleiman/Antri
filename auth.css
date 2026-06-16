@@ -191,6 +191,9 @@
 }
 #authGate .auth-privacy-link { color: #8c95a6; font-weight: 540; }
 #authGate .auth-privacy-link:hover { color: #60a5fa; }
+#authGate .auth-legal-links { display: flex; gap: 18px; }
+#authGate .auth-legal-links a { color: #8c95a6; font-weight: 540; font-size: 0.85rem; text-decoration: none; }
+#authGate .auth-legal-links a:hover { color: #60a5fa; }
 
 /* --------------------------------------------------------- preview (right) */
 #authGate .auth-preview {
