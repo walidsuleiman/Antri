@@ -176,6 +176,7 @@
                 <a class="account-action" href="privacy.html" role="menuitem">Privacy policy</a>
                 <a class="account-action" href="terms.html" role="menuitem">Terms of service</a>
                 <button class="account-action" type="button" id="signOutButton" role="menuitem">Sign out</button>
+                <button class="account-action account-danger" type="button" id="deleteAccountButton" role="menuitem">Delete account</button>
               </div>
             </div>
             <input id="importFile" type="file" accept="application/json" hidden>
@@ -461,6 +462,22 @@
       <button class="primary-button" type="button" id="upgradeCheckout">Start 3-day free trial</button>
       <output id="upgradeStatus" class="upgrade-status" aria-live="polite"></output>
       <p class="upgrade-fine">Secure checkout via Stripe. By continuing you agree to our <a href="terms.html" target="_blank" rel="noreferrer">Terms</a> &amp; <a href="privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.</p>
+    </div>
+
+    <div id="confirmBackdrop" class="upgrade-backdrop" hidden></div>
+    <div id="deleteModal" class="upgrade-modal danger-modal" role="dialog" aria-modal="true" aria-labelledby="deleteTitle" aria-hidden="true" hidden>
+      <button class="upgrade-close" type="button" id="deleteCancelButton" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <span class="eyebrow danger">Delete account</span>
+      <h2 id="deleteTitle">Delete your account?</h2>
+      <p class="upgrade-reason">This permanently deletes <strong>all your applications</strong> and cancels any active subscription. This <strong>cannot be undone</strong>. Consider exporting your data first.</p>
+      <label class="delete-confirm">
+        <span>Type <strong>DELETE</strong> to confirm</span>
+        <input id="deleteConfirmInput" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="DELETE">
+      </label>
+      <button class="danger-solid" type="button" id="deleteConfirmButton" disabled>Permanently delete account</button>
+      <output id="deleteStatus" class="upgrade-status" aria-live="polite"></output>
     </div>
 
     <template id="jobCardTemplate">

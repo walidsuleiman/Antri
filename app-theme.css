@@ -512,6 +512,64 @@ select optgroup {
 .upgrade-fine { margin-top: 12px; text-align: center; color: #69707e; font-size: 0.78rem; }
 .upgrade-fine a { color: var(--muted); text-decoration: underline; }
 .upgrade-fine a:hover { color: var(--accent); }
+
+/* --------------------------------------------------------- account deletion */
+.account-action.account-danger {
+  color: #fca5a5;
+  border-color: rgba(248, 113, 113, 0.25);
+  background: rgba(248, 113, 113, 0.06);
+}
+.account-action.account-danger:hover {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.14);
+}
+.upgrade-modal.danger-modal {
+  background:
+    radial-gradient(520px 280px at 50% -10%, rgba(248, 113, 113, 0.2), transparent 60%),
+    var(--panel-strong);
+}
+.upgrade-modal .eyebrow.danger { color: #f87171; }
+.delete-confirm {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.delete-confirm strong { color: var(--ink); }
+.delete-confirm input {
+  min-height: 46px;
+  padding: 11px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  transition: border-color 0.2s var(--ease-app), box-shadow 0.2s var(--ease-app);
+}
+.delete-confirm input:focus-visible {
+  outline: none;
+  border-color: rgba(248, 113, 113, 0.6);
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.18);
+}
+.danger-solid {
+  width: 100%;
+  margin-top: 18px;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  background: linear-gradient(180deg, #f87171, #dc2626);
+  box-shadow: 0 8px 26px rgba(220, 38, 38, 0.4);
+  transition: transform 0.2s var(--ease-app), box-shadow 0.25s var(--ease-app), opacity 0.2s var(--ease-app);
+}
+.danger-solid:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 12px 34px rgba(220, 38, 38, 0.55); }
+.danger-solid:disabled { opacity: 0.5; cursor: not-allowed; }
 .upgrade-close {
   position: absolute; top: 16px; right: 16px;
   width: 34px; height: 34px;

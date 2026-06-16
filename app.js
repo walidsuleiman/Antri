@@ -112,6 +112,13 @@ const elements = {
   upgradeReason: document.getElementById("upgradeReason"),
   upgradeCheckout: document.getElementById("upgradeCheckout"),
   upgradeStatus: document.getElementById("upgradeStatus"),
+  deleteAccountButton: document.getElementById("deleteAccountButton"),
+  confirmBackdrop: document.getElementById("confirmBackdrop"),
+  deleteModal: document.getElementById("deleteModal"),
+  deleteCancelButton: document.getElementById("deleteCancelButton"),
+  deleteConfirmInput: document.getElementById("deleteConfirmInput"),
+  deleteConfirmButton: document.getElementById("deleteConfirmButton"),
+  deleteStatus: document.getElementById("deleteStatus"),
   template: document.getElementById("jobCardTemplate")
 };
 
@@ -214,6 +221,14 @@ function bindEvents() {
   elements.upgradeBackdrop.addEventListener("click", closeUpgradeModal);
   elements.upgradeCheckout.addEventListener("click", startCheckout);
 
+  elements.deleteAccountButton.addEventListener("click", openDeleteModal);
+  elements.deleteCancelButton.addEventListener("click", closeDeleteModal);
+  elements.confirmBackdrop.addEventListener("click", closeDeleteModal);
+  elements.deleteConfirmInput.addEventListener("input", () => {
+    elements.deleteConfirmButton.disabled = elements.deleteConfirmInput.value.trim().toUpperCase() !== "DELETE";
+  });
+  elements.deleteConfirmButton.addEventListener("click", performDeleteAccount);
+
   document.addEventListener("click", (event) => {
     if (!elements.accountMenu.contains(event.target)) {
       closeAccountMenu();
@@ -225,6 +240,9 @@ function bindEvents() {
       closeAccountMenu();
       if (!elements.upgradeModal.hidden) {
         closeUpgradeModal();
+      }
+      if (!elements.deleteModal.hidden) {
+        closeDeleteModal();
       }
       if (elements.drawer.classList.contains("open")) {
         closeDrawer();
@@ -663,6 +681,57 @@ function handleUpgradeReturn() {
     }
   };
   setTimeout(poll, 1200);
+}
+
+function openDeleteModal() {
+  closeAccountMenu();
+  elements.deleteConfirmInput.value = "";
+  elements.deleteConfirmButton.disabled = true;
+  elements.deleteStatus.textContent = "";
+  elements.confirmBackdrop.hidden = false;
+  elements.deleteModal.hidden = false;
+  elements.deleteModal.setAttribute("aria-hidden", "false");
+  elements.deleteConfirmInput.focus();
+}
+
+function closeDeleteModal() {
+  elements.confirmBackdrop.hidden = true;
+  elements.deleteModal.hidden = true;
+  elements.deleteModal.setAttribute("aria-hidden", "true");
+}
+
+async function performDeleteAccount() {
+  if (elements.deleteConfirmInput.value.trim().toUpperCase() !== "DELETE") {
+    return;
+  }
+  elements.deleteConfirmButton.disabled = true;
+  elements.deleteStatus.textContent = "Deleting your account…";
+  try {
+    const session = await getActiveSession();
+    const response = await fetch("/api/delete-account", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${session.access_token}`
+      },
+      body: JSON.stringify({})
+    });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.deleted) {
+      throw new Error(payload.error || "Could not delete your account. Please try again or contact support.");
+    }
+    closeDeleteModal();
+    try {
+      await authClient.auth.signOut();
+    } catch (signOutError) {
+      // The account is already gone; clearing the local session is enough.
+    }
+    showSignedOutApp();
+    setAuthStatus("Your account and all its data have been permanently deleted.");
+  } catch (error) {
+    elements.deleteStatus.textContent = error.message;
+    elements.deleteConfirmButton.disabled = false;
+  }
 }
 
 async function manageSubscription() {
