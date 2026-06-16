@@ -63,10 +63,12 @@ const elements = {
   accountEmail: document.getElementById("accountEmail"),
   views: {
     pipeline: document.getElementById("pipelineView"),
+    board: document.getElementById("boardView"),
     followups: document.getElementById("followupsView"),
     insights: document.getElementById("insightsView"),
     integrations: document.getElementById("integrationsView")
   },
+  kanban: document.getElementById("kanban"),
   navItems: [...document.querySelectorAll(".nav-item")],
   totalApplications: document.getElementById("totalApplications"),
   activeApplications: document.getElementById("activeApplications"),
@@ -842,6 +844,7 @@ function render() {
   updatePlanUI();
   renderSourceFilters();
   renderJobs();
+  renderBoard();
   renderFollowups();
   renderInsights();
 }
@@ -965,6 +968,113 @@ function sourceFilterButton(key, label, count) {
     renderJobs();
   });
   return button;
+}
+
+function boardJobs() {
+  const query = elements.searchInput.value.trim().toLowerCase();
+  if (!query) return jobs;
+  return jobs.filter((job) => {
+    const haystack = [job.role, job.company, job.location, job.status, job.notes, job.source, job.contact]
+      .join(" ").toLowerCase();
+    return haystack.includes(query);
+  });
+}
+
+function renderBoard() {
+  const board = elements.kanban;
+  if (!board) return;
+  board.replaceChildren();
+  const visible = boardJobs();
+
+  statuses.forEach((status) => {
+    const columnJobs = visible.filter((job) => job.status === status);
+
+    const column = document.createElement("div");
+    column.className = "kanban-col";
+    column.dataset.status = status;
+
+    const head = document.createElement("div");
+    head.className = "kanban-col-head";
+    head.innerHTML =
+      `<span class="kanban-col-title ${cssToken(status)}">${escapeHtml(status)}</span>` +
+      `<span class="kanban-col-count">${columnJobs.length}</span>`;
+    column.appendChild(head);
+
+    const list = document.createElement("div");
+    list.className = "kanban-cards";
+    columnJobs.forEach((job) => list.appendChild(buildKanbanCard(job)));
+    column.appendChild(list);
+
+    column.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = "move";
+      column.classList.add("drop-target");
+    });
+    column.addEventListener("dragleave", (event) => {
+      if (!column.contains(event.relatedTarget)) column.classList.remove("drop-target");
+    });
+    column.addEventListener("drop", (event) => {
+      event.preventDefault();
+      column.classList.remove("drop-target");
+      const id = event.dataTransfer.getData("text/plain");
+      if (id) updateJobStatus(id, status);
+    });
+
+    board.appendChild(column);
+  });
+}
+
+function buildKanbanCard(job) {
+  const card = document.createElement("article");
+  card.className = "kanban-card";
+  card.draggable = true;
+  card.dataset.id = job.id;
+
+  const priority = (job.priority || "Medium").toLowerCase();
+  const meta = [];
+  if (job.followUp) meta.push(`Follow-up ${formatDate(job.followUp)}`);
+  if (job.heardBack) meta.push("Heard back");
+  const sub = [job.company, job.location].filter(Boolean).join(" · ") || "—";
+
+  card.innerHTML =
+    `<div class="kanban-card-top">` +
+      `<strong>${escapeHtml(job.role || "Untitled role")}</strong>` +
+      `<span class="priority-pill ${priority}">${escapeHtml(job.priority || "Medium")}</span>` +
+    `</div>` +
+    `<p class="kanban-card-company">${escapeHtml(sub)}</p>` +
+    (meta.length ? `<p class="kanban-card-meta">${escapeHtml(meta.join(" · "))}</p>` : "");
+
+  card.addEventListener("dragstart", (event) => {
+    event.dataTransfer.setData("text/plain", job.id);
+    event.dataTransfer.effectAllowed = "move";
+    card.classList.add("dragging");
+  });
+  card.addEventListener("dragend", () => card.classList.remove("dragging"));
+  card.addEventListener("click", () => openDrawer(job));
+  return card;
+}
+
+async function updateJobStatus(jobId, newStatus) {
+  const job = jobs.find((item) => item.id === jobId);
+  if (!job || job.status === newStatus) return;
+
+  const previousStatus = job.status;
+  job.status = newStatus; // optimistic
+  render();
+  setSyncStatus("Updating status…");
+  try {
+    const [savedJob] = await upsertCloudJobs([job]);
+    if (savedJob) {
+      const index = jobs.findIndex((item) => item.id === jobId);
+      if (index >= 0) jobs[index] = savedJob;
+    }
+    setSyncStatus(`Moved to ${newStatus}.`, "success");
+  } catch (error) {
+    const reverted = jobs.find((item) => item.id === jobId);
+    if (reverted) reverted.status = previousStatus;
+    render();
+    setSyncStatus(cloudStorageErrorMessage(error), "error");
+  }
 }
 
 function renderFollowups() {
